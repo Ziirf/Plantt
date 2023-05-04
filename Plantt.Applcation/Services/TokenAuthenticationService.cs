@@ -31,7 +31,7 @@ namespace Plantt.Applcation.Services
         {
             byte[] key = _jwtsettings.SecretKeyBytes;
             DateTime utcNow = DateTime.UtcNow;
-            DateTime expireTime = utcNow.AddSeconds(10);//utcNow.AddMinutes(_jwtsettings.MinutesToLive);
+            DateTime expireTime = utcNow.AddMinutes(_jwtsettings.MinutesToLive);
 
             var tokenDescriptor = new SecurityTokenDescriptor
             {
