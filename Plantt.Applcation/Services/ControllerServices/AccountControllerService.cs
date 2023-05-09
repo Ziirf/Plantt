@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Plantt.DataAccess.EntityFramework;
 using Plantt.Domain.DTOs.Requests;
 using Plantt.Domain.Entities;
+using Plantt.Domain.Interfaces.Repository;
 using Plantt.Domain.Interfaces.Services;
 using Plantt.Domain.Models;
 
@@ -10,40 +11,33 @@ namespace Plantt.Applcation.Services.ControllerServices
 {
     public class AccountControllerService : IAccountControllerService
     {
-        private readonly PlanttDbContext _planttDb;
-        private readonly ITokenAuthenticationService _tokenAuthenticationService;
         private readonly IPasswordService _passwordService;
         private readonly IMapper _mapper;
+        private readonly IUnitOfWork _unitOfWork;
 
         public AccountControllerService(
-            PlanttDbContext planttDb,
-            ITokenAuthenticationService tokenAuthenticationService,
             IPasswordService passwordService,
-            IMapper mapper)
+            IMapper mapper,
+            IUnitOfWork unitOfWork)
         {
-            _planttDb = planttDb;
-            _tokenAuthenticationService = tokenAuthenticationService;
             _passwordService = passwordService;
             _mapper = mapper;
-        }
-
-        public AccountEntity[] GetAllAccounts()
-        {
-            return _planttDb.Accounts.ToArray();
+            _unitOfWork = unitOfWork;
         }
 
         public async Task<AccountEntity?> GetAccountByGuidAsync(Guid guid)
         {
-            AccountEntity? account = await _planttDb.Accounts.FirstOrDefaultAsync();
+            return await _unitOfWork.AccountRepository.GetByGuidAsync(guid);
+        }
 
-            return account;
+        public async Task<AccountEntity?> GetAccountByIdAsync(int id)
+        {
+            return await _unitOfWork.AccountRepository.GetByIdAsync(id);
         }
 
         public async Task<AccountEntity?> GetAccountByUsernameAsync(string username)
         {
-            AccountEntity? account = await _planttDb.Accounts.FirstOrDefaultAsync(account => account.Username == username);
-
-            return account;
+            return await _unitOfWork.AccountRepository.GetByUsernameAsync(username);
         }
 
         public async Task<AccountEntity> CreateNewAccountAsync(CreateAccountRequest accountRequest)
@@ -59,8 +53,8 @@ namespace Plantt.Applcation.Services.ControllerServices
                 Email = accountRequest.Email
             };
 
-            await _planttDb.Accounts.AddAsync(newAccount);
-            await _planttDb.SaveChangesAsync();
+            await _unitOfWork.AccountRepository.AddAsync(newAccount);
+            await _unitOfWork.CommitAsync();
 
             return newAccount;
         }

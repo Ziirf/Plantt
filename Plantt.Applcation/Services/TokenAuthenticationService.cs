@@ -1,10 +1,13 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Plantt.DataAccess.EntityFramework;
+using Plantt.DataAccess.EntityFramework.Repository;
 using Plantt.Domain.Config;
 using Plantt.Domain.Entities;
 using Plantt.Domain.Enums;
+using Plantt.Domain.Interfaces.Repository;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
@@ -15,19 +18,22 @@ namespace Plantt.Applcation.Services
     {
         private readonly JsonWebTokenSettings _jwtsettings;
         private readonly RefreshTokenSettings _refreshTokenSettins;
-        private readonly PlanttDbContext _planttDbContext;
+        private readonly ILogger<TokenAuthenticationService> _logger;
+        private readonly IUnitOfWork _unitOfWork;
 
         public TokenAuthenticationService(
+            ILogger<TokenAuthenticationService> logger,
             IOptions<JsonWebTokenSettings> jwtsettings,
             IOptions<RefreshTokenSettings> refreshTokenSettins,
-            PlanttDbContext planttDbContext)
+            IUnitOfWork unitOfWork)
         {
             _jwtsettings = jwtsettings.Value;
             _refreshTokenSettins = refreshTokenSettins.Value;
-            _planttDbContext = planttDbContext;
+            _logger = logger;
+            _unitOfWork = unitOfWork;
         }
 
-        public string GenerateAccessToken(Guid guid)
+        public string GenerateAccessToken(Guid guid, string role = "Free")
         {
             byte[] key = _jwtsettings.SecretKeyBytes;
             DateTime utcNow = DateTime.UtcNow;
@@ -40,7 +46,7 @@ namespace Plantt.Applcation.Services
                     new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
                     new Claim(JwtRegisteredClaimNames.Sub, guid.ToString()),
                     new Claim(JwtRegisteredClaimNames.Iss, _jwtsettings.Issuer),
-                    new Claim("role", "Free")
+                    new Claim("role", role)
                 }),
                 NotBefore = utcNow,
                 Expires = expireTime,
@@ -58,21 +64,16 @@ namespace Plantt.Applcation.Services
         {
             var tokenFamily = CreateTokenFamilyEntity(account);
 
-            var refreshToken = await GenerateRefreshTokenAsync(account, tokenFamily);
+            var refreshToken = await GenerateRefreshTokenAsync(tokenFamily);
 
             return refreshToken;
         }
 
-        public async Task<RefreshTokenEntity> GenerateRefreshTokenAsync(AccountEntity account, TokenFamilyEntity tokenFamily)
+        public async Task<RefreshTokenEntity> GenerateRefreshTokenAsync(TokenFamilyEntity tokenFamily)
         {
             DateTime utcNow = DateTime.UtcNow;
 
-            if (tokenFamily.Account.Id != account.Id)
-            {
-                throw new InvalidOperationException("Account does not match with tokenfamily");
-            }
-
-            RefreshTokenEntity refreshToken = new RefreshTokenEntity()
+            var refreshToken = new RefreshTokenEntity()
             {
                 Token = Base64UrlEncoder.Encode(GenerateRanomByteArray(_refreshTokenSettins.RefreshTokenLength)),
                 TokenFamily = tokenFamily,
@@ -81,38 +82,29 @@ namespace Plantt.Applcation.Services
                 Used = false
             };
 
-            await _planttDbContext.RefreshTokens.AddAsync(refreshToken);
-            await _planttDbContext.SaveChangesAsync();
+            await _unitOfWork.RefreshTokenRepository.AddAsync(refreshToken);
+            await _unitOfWork.CommitAsync();
 
             return refreshToken;
         }
 
-        public async Task<RefreshTokenEntity?> GetRefreshToken(string refreshToken, int accountId)
+        public async Task<RefreshTokenEntity?> GetRefreshToken(string refreshToken)
         {
-            RefreshTokenEntity? storedToken = await _planttDbContext.RefreshTokens
-                .Include(token => token.TokenFamily)
-                .ThenInclude(tokenFamily => tokenFamily.Account)
-                .FirstOrDefaultAsync(token => token.TokenFamily.FK_Account_Id == accountId && token.Token == refreshToken);
-
-            return storedToken;
-        }
-
-        public async Task<RefreshTokenEntity?> GetRefreshToken(string refreshToken, Guid accountId)
-        {
-            RefreshTokenEntity? storedToken = await _planttDbContext.RefreshTokens
-                .Include(token => token.TokenFamily)
-                .ThenInclude(tokenFamily => tokenFamily.Account)
-                .FirstOrDefaultAsync(token => token.TokenFamily.Account.PublicId == accountId && token.Token == refreshToken);
-
-            return storedToken;
+            return await _unitOfWork.RefreshTokenRepository.GetByRefreshTokenAsync(refreshToken);
         }
 
         public async Task MarkRefreshTokenAsUsedAsync(RefreshTokenEntity refreshToken)
         {
-            refreshToken.Used = true;
-
-            _planttDbContext.RefreshTokens.Update(refreshToken);
-            await _planttDbContext.SaveChangesAsync();
+            try
+            {
+                refreshToken.Used = true;
+                _unitOfWork.RefreshTokenRepository.Update(refreshToken);
+                await _unitOfWork.CommitAsync();
+            }
+            catch (Exception exception)
+            {
+                _logger.LogError("Failed to mark refreshtoken as used", exception);
+            }
         }
 
         public async Task RevokeTokenFamilyAsync(TokenFamilyEntity tokenFamily, TokenFamilyRevokeReason reason)
@@ -120,14 +112,14 @@ namespace Plantt.Applcation.Services
             tokenFamily.RevokeTS = DateTime.UtcNow;
             tokenFamily.RevokeReason = reason;
 
-            _planttDbContext.TokenFamilies.Update(tokenFamily);
-            await _planttDbContext.SaveChangesAsync();
+            _unitOfWork.TokenFamilyRepository.Update(tokenFamily);
+            await _unitOfWork.CommitAsync();
         }
 
         private TokenFamilyEntity CreateTokenFamilyEntity(AccountEntity account)
         {
-            TokenFamilyEntity tokenFamily = new TokenFamilyEntity()
-            {
+            var tokenFamily = new TokenFamilyEntity()
+            { 
                 Account = account,
                 Identifier = Base64UrlEncoder.Encode(GenerateRanomByteArray(_refreshTokenSettins.RefreshFamilyLength))
             };
@@ -135,7 +127,7 @@ namespace Plantt.Applcation.Services
             return tokenFamily;
         }
 
-        private byte[] GenerateRanomByteArray(int byteLength)
+        private static byte[] GenerateRanomByteArray(int byteLength)
         {
             var bytes = new byte[byteLength];
 

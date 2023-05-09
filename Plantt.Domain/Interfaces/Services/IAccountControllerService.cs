@@ -7,8 +7,8 @@ namespace Plantt.Domain.Interfaces.Services
     {
         Task<AccountEntity> CreateNewAccountAsync(CreateAccountRequest accountRequest);
         Task<AccountEntity?> GetAccountByGuidAsync(Guid guid);
+        Task<AccountEntity?> GetAccountByIdAsync(int id);
         Task<AccountEntity?> GetAccountByUsernameAsync(string username);
-        AccountEntity[] GetAllAccounts();
         bool VerifyPassword(AccountEntity account, string password);
     }
 }

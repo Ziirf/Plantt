@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Plantt.Applcation.Services;
 using Plantt.Domain.DTOs.Account;
@@ -19,15 +20,18 @@ namespace Plantt.API.Controllers
         private readonly ITokenAuthenticationService _tokenService;
         private readonly IAccountControllerService _accountService;
         private readonly IMapper _mapper;
+        private readonly ILogger<AccountController> _logger;
 
         public AccountController(
             ITokenAuthenticationService authenticationService,
             IAccountControllerService accountService,
-            IMapper mapper)
+            IMapper mapper,
+            ILogger<AccountController> logger)
         {
             _tokenService = authenticationService;
             _accountService = accountService;
             _mapper = mapper;
+            _logger = logger;
         }
 
         [HttpPost("Create")]
@@ -81,62 +85,59 @@ namespace Plantt.API.Controllers
         [HttpGet("Logout/{token}")]
         public async Task<IActionResult> LogoutEndpoint([FromRoute] string token)
         {
-            var identity = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            RefreshTokenEntity? refreshToken = await _tokenService.GetRefreshToken(token);
 
-            if (Guid.TryParse(identity, out var publicId))
+            if (refreshToken is not null)
             {
-                RefreshTokenEntity? refreshToken = await _tokenService.GetRefreshToken(token, publicId);
+                await _tokenService.MarkRefreshTokenAsUsedAsync(refreshToken);
+                await _tokenService.RevokeTokenFamilyAsync(refreshToken.TokenFamily, TokenFamilyRevokeReason.LoggedOut);
 
-                if (refreshToken is not null)
-                {
-                    await _tokenService.MarkRefreshTokenAsUsedAsync(refreshToken);
-                    await _tokenService.RevokeTokenFamilyAsync(refreshToken.TokenFamily, TokenFamilyRevokeReason.LoggedOut);
-
-                    return Ok();
-                }
+                return NoContent();
             }
 
             return NotFound();
         }
 
-        [HttpPost("Refresh")]
-        public async Task<IActionResult> RefreshTokenEndpoint([FromBody] RefreshTokenRequest request)
+        [HttpGet("Refresh/{token}")]
+        public async Task<IActionResult> RefreshTokenEndpoint([FromRoute] string token)
         {
-            AccountEntity? account = await _accountService.GetAccountByGuidAsync(request.AccountPublicId);
 
-            if (account is null)
-            {
-                return NotFound("Couldn't find an account with this ID.");
-            }
-
-            RefreshTokenEntity? refreshToken = await _tokenService.GetRefreshToken(request.Token, account.Id);
+            RefreshTokenEntity? refreshToken = await _tokenService.GetRefreshToken(token);
 
             if (refreshToken is null)
             {
-                return NotFound("Couldn't find refreshtoken in database");
+                return NotFound("Token couldn't be found.");
             }
 
             if (refreshToken.TokenFamily.RevokeTS is not null)
             {
-                return Unauthorized("This token family have been revoked");
+                return Unauthorized("Token has been revoked.");
             }
 
             if (refreshToken.Used is true)
             {
                 await _tokenService.RevokeTokenFamilyAsync(refreshToken.TokenFamily, TokenFamilyRevokeReason.Compromised);
-                return Unauthorized("This token have already been used");
+                return Unauthorized("Token have previously been used, and is now marked as compromised.");
             }
 
             if (DateTime.UtcNow.Ticks > refreshToken.ExpirationTS.Ticks)
             {
                 await _tokenService.RevokeTokenFamilyAsync(refreshToken.TokenFamily, TokenFamilyRevokeReason.Expired);
-                return Unauthorized("This token have expired");
+                return Unauthorized("Token have expired.");
             }
 
             await _tokenService.MarkRefreshTokenAsUsedAsync(refreshToken);
 
+            var account = await _accountService.GetAccountByIdAsync(refreshToken.TokenFamily.FK_Account_Id);
+
+
+            if (account is null)
+            {
+                return NotFound("Was unable to find an account linked to this token.");
+            }
+
             string accessToken = _tokenService.GenerateAccessToken(account.PublicId);
-            RefreshTokenEntity newRefreshToken = await _tokenService.GenerateRefreshTokenAsync(account, refreshToken.TokenFamily);
+            RefreshTokenEntity newRefreshToken = await _tokenService.GenerateRefreshTokenAsync(refreshToken.TokenFamily);
 
             var response = new TokenAuthenticationResponse()
             {
@@ -146,6 +147,13 @@ namespace Plantt.API.Controllers
             };
 
             return Ok(response);
+        }
+
+        [Authorize]
+        [HttpGet("validate")]
+        public IActionResult Validate()
+        {
+            return Ok();
         }
     }
 }

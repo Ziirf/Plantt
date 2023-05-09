@@ -1,9 +1,10 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
+﻿using Plantt.Domain.Interfaces;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Plantt.Domain.Entities
 {
     [Table("RefreshToken")]
-    public class RefreshTokenEntity
+    public class RefreshTokenEntity : IEntity
     {
         public int Id { get; set; }
         public required string Token { get; set; }

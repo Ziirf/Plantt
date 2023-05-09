@@ -36,9 +36,9 @@ namespace Plantt.Applcation.Services
 
         public bool VerifyPassword(string password, Password hashedPassword)
         {
-            if (string.IsNullOrEmpty(password) || hashedPassword is null)
+            if (string.IsNullOrEmpty(password) || hashedPassword.HashedPassword is null)
             {
-                return false;
+                throw new ArgumentNullException("Either password or hashedPassword was null or empty");
             }
 
             byte[] recreatedPassword = HashPassword(password, hashedPassword.Salt, hashedPassword.Iterations, _passwordSettings.PasswordHashSize);

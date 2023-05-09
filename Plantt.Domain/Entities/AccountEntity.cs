@@ -1,9 +1,10 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
+﻿using Plantt.Domain.Interfaces;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Plantt.Domain.Entities
 {
     [Table("Account")]
-    public class AccountEntity
+    public class AccountEntity : IEntity
     {
         public int Id { get; set; }
 

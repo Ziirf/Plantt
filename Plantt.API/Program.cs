@@ -7,8 +7,11 @@ using Plantt.Applcation.Automapper;
 using Plantt.Applcation.Services;
 using Plantt.Applcation.Services.ControllerServices;
 using Plantt.DataAccess.EntityFramework;
+using Plantt.DataAccess.EntityFramework.Repository;
 using Plantt.Domain.Config;
+using Plantt.Domain.Interfaces.Repository;
 using Plantt.Domain.Interfaces.Services;
+using Serilog;
 
 namespace Plantt.API
 {
@@ -19,7 +22,7 @@ namespace Plantt.API
             var builder = WebApplication.CreateBuilder(args);
             var config = builder.Configuration;
             var service = builder.Services;
-
+            
             // Add services to the container.
             var jwtSection = config.GetSection("JWTSettings");
             var jwtSettings = jwtSection?.Get<JsonWebTokenSettings>();
@@ -38,6 +41,9 @@ namespace Plantt.API
             service.AddTransient<IPasswordService, PasswordPBKDF2Service>();
             service.AddTransient<ITokenAuthenticationService, TokenAuthenticationService>();
             service.AddTransient<IAccountControllerService, AccountControllerService>();
+
+            // Unit of work
+            service.AddScoped<IUnitOfWork, UnitOfWork>();
 
             // Fluent Validation
             service.AddFluentValidationAutoValidation();
@@ -77,7 +83,7 @@ namespace Plantt.API
                 options.SaveToken = true;
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
-                    ClockSkew = TimeSpan.Zero,
+                    ClockSkew = TimeSpan.FromMinutes(3),
                     ValidateLifetime = true,
 
                     ValidateIssuer = false,
@@ -89,14 +95,19 @@ namespace Plantt.API
                 };
             });
 
+            //Logging setup
+            builder.Logging.ClearProviders();
+            builder.Host.UseSerilog((context, configuration) =>
+                configuration.ReadFrom.Configuration(context.Configuration));
+
+
             var app = builder.Build();
 
             //Configure the HTTP request pipeline.
-            if (app.Environment.IsDevelopment())
-            {
-                app.UseSwagger();
-                app.UseSwaggerUI();
-            }
+            app.UseSwagger();
+            app.UseSwaggerUI();
+
+            app.UseSerilogRequestLogging();
 
             app.UseHttpsRedirection();
 

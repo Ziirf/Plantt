@@ -1,25 +1,26 @@
 ﻿using FluentValidation;
-using Plantt.DataAccess.EntityFramework;
 using Plantt.Domain.DTOs.Requests;
+using Plantt.Domain.Interfaces.Repository;
 
 namespace Plantt.API.Validators.Account
 {
     public class CreateAccountRequestValidator : AbstractValidator<CreateAccountRequest>
     {
-        private readonly PlanttDbContext _planttDbContext;
+        private readonly IUnitOfWork _unitOfWork;
 
-        public CreateAccountRequestValidator(PlanttDbContext planttDbContext)
+        public CreateAccountRequestValidator(IUnitOfWork unitOfWork)
         {
-            _planttDbContext = planttDbContext;
+            _unitOfWork = unitOfWork;
+
 
             RuleFor(account => account.Username)
                 .NotEmpty()
                 .WithMessage("Username can't be empty.")
+                .Must(username => username.All(char.IsLetterOrDigit))
+                .WithMessage("Must only contain letters and digits.")
                 .Must(username =>
                 {
-                    var result = _planttDbContext.Accounts.Any(account => account.Username == username);
-
-                    return !result;
+                    return _unitOfWork.AccountRepository.DoesUsernameExist(username) is false;
                 })
                 .WithMessage("Username already exists.");
 
@@ -29,7 +30,7 @@ namespace Plantt.API.Validators.Account
                 .MinimumLength(8)
                 .WithMessage("Password need to be at least 8 characters long")
                 .Must(password => password.Any(char.IsLetter) && password.Any(char.IsDigit))
-                .WithMessage("Password must include both letters and numbers");
+                .WithMessage("Password must include both letters and digits");
 
             RuleFor(account => account.Email)
                 .NotEmpty()

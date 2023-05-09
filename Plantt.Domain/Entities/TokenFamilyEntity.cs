@@ -1,10 +1,11 @@
 ﻿using Plantt.Domain.Enums;
+using Plantt.Domain.Interfaces;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Plantt.Domain.Entities
 {
     [Table("TokenFamily")]
-    public class TokenFamilyEntity
+    public class TokenFamilyEntity : IEntity
     {
         public int Id { get; set; }
         public required string Identifier { get; set; }
