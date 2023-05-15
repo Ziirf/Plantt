@@ -362,3 +362,7 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 /Plantt.API/appsettings.Production.json
+/Plantt.AdminPanel/Plantt.AdminPanel.csproj
+/Plantt.AdminPanel/Plant.cs
+/Plantt.AdminPanel/Program.cs
+/Plantt.AdminPanel/Tash.cs
