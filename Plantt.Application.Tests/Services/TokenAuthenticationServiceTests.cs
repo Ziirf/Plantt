@@ -1,12 +1,21 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Plantt.Application.Tests.Services
+﻿namespace Plantt.Application.Tests.Services
 {
     public class TokenAuthenticationServiceTests
     {
+
+        public TokenAuthenticationServiceTests()
+        {
+
+        }
+
+        [Fact]
+        public void Test()
+        {
+            // Arrange
+
+            // Act
+
+            // Assert
+        }
     }
 }

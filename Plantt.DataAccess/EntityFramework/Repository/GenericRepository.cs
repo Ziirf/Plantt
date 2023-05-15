@@ -1,19 +1,14 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Plantt.Domain.Interfaces;
 using Plantt.Domain.Interfaces.Repository;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Plantt.DataAccess.EntityFramework.Repository
 {
-    public class GenericRepository<TEntity> : IRepository<TEntity> where TEntity : class, IEntity
+    public abstract class GenericRepository<TEntity> : IRepository<TEntity> where TEntity : class, IEntity
     {
-        private readonly PlanttDbContext _context;
+        private readonly PlanttDBContext _context;
 
-        public GenericRepository(PlanttDbContext context)
+        public GenericRepository(PlanttDBContext context)
         {
             _context = context;
         }

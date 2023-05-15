@@ -100,7 +100,7 @@ namespace Plantt.Application.Tests.Services
             var passwordObject = new Password()
             {
                 HashedPassword = hashedPassword,
-                Salt = new byte[] { 4, 5, 6 },
+                Salt = new byte[] { 10, 20, 30 },
                 Iterations = 10000
             };
 

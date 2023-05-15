@@ -1,13 +1,10 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
-using Plantt.DataAccess.EntityFramework;
-using Plantt.DataAccess.EntityFramework.Repository;
 using Plantt.Domain.Config;
 using Plantt.Domain.Entities;
 using Plantt.Domain.Enums;
-using Plantt.Domain.Interfaces.Repository;
+using Plantt.Domain.Interfaces;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
@@ -33,18 +30,30 @@ namespace Plantt.Applcation.Services
             _unitOfWork = unitOfWork;
         }
 
-        public string GenerateAccessToken(Guid guid, string role = "Free")
+        public string GenerateAccessToken(string subject, AccountRoles role = AccountRoles.Registred)
+        {
+            var defaultTime = TimeSpan.FromMinutes(_jwtsettings.MinutesToLive);
+
+            return GenerateAccessToken(subject, defaultTime, role.ToString());
+        }
+
+        public string GenerateAccessToken(string subject, TimeSpan expireIn, AccountRoles role = AccountRoles.Registred)
+        {
+            return GenerateAccessToken(subject, expireIn, role.ToString());
+        }
+
+        public string GenerateAccessToken(string subject, TimeSpan expireIn, string role)
         {
             byte[] key = _jwtsettings.SecretKeyBytes;
             DateTime utcNow = DateTime.UtcNow;
-            DateTime expireTime = utcNow.AddMinutes(_jwtsettings.MinutesToLive);
+            DateTime expireTime = utcNow + expireIn;
 
             var tokenDescriptor = new SecurityTokenDescriptor
             {
                 Subject = new ClaimsIdentity(new Claim[]
                 {
                     new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-                    new Claim(JwtRegisteredClaimNames.Sub, guid.ToString()),
+                    new Claim(JwtRegisteredClaimNames.Sub, subject),
                     new Claim(JwtRegisteredClaimNames.Iss, _jwtsettings.Issuer),
                     new Claim("role", role)
                 }),
@@ -88,7 +97,7 @@ namespace Plantt.Applcation.Services
             return refreshToken;
         }
 
-        public async Task<RefreshTokenEntity?> GetRefreshToken(string refreshToken)
+        public async Task<RefreshTokenEntity?> GetRefreshTokenAsync(string refreshToken)
         {
             return await _unitOfWork.RefreshTokenRepository.GetByRefreshTokenAsync(refreshToken);
         }
@@ -116,10 +125,33 @@ namespace Plantt.Applcation.Services
             await _unitOfWork.CommitAsync();
         }
 
+        public async Task<bool> ValidateRefreshTokenAsync(RefreshTokenEntity refreshToken)
+        {
+
+            if (refreshToken.TokenFamily.RevokeTS is not null)
+            {
+                return false;
+            }
+
+            if (refreshToken.Used is true)
+            {
+                await RevokeTokenFamilyAsync(refreshToken.TokenFamily, TokenFamilyRevokeReason.Compromised);
+                return false;
+            }
+
+            if (DateTime.UtcNow.Ticks > refreshToken.ExpirationTS.Ticks)
+            {
+                await RevokeTokenFamilyAsync(refreshToken.TokenFamily, TokenFamilyRevokeReason.Expired);
+                return false;
+            }
+
+            return true;
+        }
+
         private TokenFamilyEntity CreateTokenFamilyEntity(AccountEntity account)
         {
             var tokenFamily = new TokenFamilyEntity()
-            { 
+            {
                 Account = account,
                 Identifier = Base64UrlEncoder.Encode(GenerateRanomByteArray(_refreshTokenSettins.RefreshFamilyLength))
             };

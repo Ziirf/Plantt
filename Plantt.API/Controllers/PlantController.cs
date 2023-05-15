@@ -1,43 +1,96 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using AutoMapper;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Plantt.Domain.DTOs.Plant;
+using Plantt.Domain.Entities;
+using Plantt.Domain.Interfaces.Services;
 
 namespace Plantt.API.Controllers
 {
     [ApiController]
     [ApiVersion("1.0")]
-    [Route("api/v{version:apiVersion}/{username}/[controller]")]
+    [Route("api/v{version:apiVersion}/")]
     public class PlantController : ControllerBase
     {
-        [HttpGet()]
-        public Task<IActionResult> GetAllPlants()
-        {
-            // Get all plants, paged
+        private readonly int[] _pageSizes = { 10, 20, 50, 100 };
+        private readonly IPlantControllerService _plantService;
+        private readonly IMapper _mapper;
 
-            throw new NotImplementedException();
+        public PlantController(IPlantControllerService plantService, IMapper mapper)
+        {
+            _plantService = plantService;
+            _mapper = mapper;
         }
 
-
-        [HttpGet("{id}")]
-        public Task<IActionResult> GetPlantById([FromRoute]int id)
+        [HttpGet("plants/{page}")]
+        public async Task<IActionResult> GetAllPlants([FromRoute] int page, [FromQuery] int pagesize = 20, [FromQuery] bool detailed = false)
         {
-            // Get a specific plant
+            if (page <= 0)
+            {
+                return BadRequest(new ProblemDetails()
+                {
+                    Title = "Invalid value",
+                    Detail = "Page can't be below 1",
+                    Status = StatusCodes.Status400BadRequest
+                });
+            }
 
-            throw new NotImplementedException();
+            if (!_pageSizes.Contains(pagesize))
+            {
+                return BadRequest(new ProblemDetails()
+                {
+                    Title = "Invalid value",
+                    Detail = "Pagesize must be either 10, 20, 50 or 100",
+                    Status = StatusCodes.Status400BadRequest
+                });
+            }
+
+            IEnumerable<PlantEntity>? plants = await _plantService.GetPlantPage(pagesize, page);
+
+            if (plants is null || plants.Count() == 0)
+            {
+                return NotFound(new ProblemDetails()
+                {
+                    Title = "No Plants Found",
+                    Detail = "Was not able to find any plants on that page.",
+                    Status = StatusCodes.Status404NotFound
+                });
+            }
+
+            if (detailed is true)
+            {
+                return Ok(_mapper.Map<IEnumerable<PlantDTO>>(plants));
+            }
+
+            return Ok(_mapper.Map<IEnumerable<PlantMinimumDTO>>(plants));
         }
 
-        [HttpGet("{slug}")]
-        public Task<IActionResult> GetPlantBySlug([FromRoute] string slug)
+        [HttpGet("plant/{id}")]
+        public async Task<IActionResult> GetPlantById([FromRoute] int id)
         {
-            // Get a specific plant
+            if (id <= 0)
+            {
+                return BadRequest(new ProblemDetails()
+                {
+                    Title = "Invalid value",
+                    Detail = "id can't be below 1",
+                    Status = StatusCodes.Status400BadRequest
+                });
+            }
 
-            throw new NotImplementedException();
+            PlantEntity? plant = await _plantService.GetPlantById(id);
+
+            if (plant is null)
+            {
+                return NotFound(new ProblemDetails()
+                {
+                    Title = "No Plants Found",
+                    Detail = "Was not able to find a plant with that id.",
+                    Status = StatusCodes.Status404NotFound
+                });
+            }
+
+            return Ok(_mapper.Map<PlantDTO>(plant));
         }
-
-        //[HttpGet("{username}/[controller]")]
-        //public Task<IActionResult> GetAllAccountPlants([FromRoute] string username)
-        //{
-        //    // Get all plants, paged
-
-        //    throw new NotImplementedException();
-        //}
     }
 }

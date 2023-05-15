@@ -3,13 +3,15 @@ using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Plantt.API.Constants;
+using Plantt.API.Middleware;
 using Plantt.Applcation.Automapper;
 using Plantt.Applcation.Services;
 using Plantt.Applcation.Services.ControllerServices;
 using Plantt.DataAccess.EntityFramework;
-using Plantt.DataAccess.EntityFramework.Repository;
 using Plantt.Domain.Config;
-using Plantt.Domain.Interfaces.Repository;
+using Plantt.Domain.Enums;
+using Plantt.Domain.Interfaces;
 using Plantt.Domain.Interfaces.Services;
 using Serilog;
 
@@ -22,7 +24,7 @@ namespace Plantt.API
             var builder = WebApplication.CreateBuilder(args);
             var config = builder.Configuration;
             var service = builder.Services;
-            
+
             // Add services to the container.
             var jwtSection = config.GetSection("JWTSettings");
             var jwtSettings = jwtSection?.Get<JsonWebTokenSettings>();
@@ -41,6 +43,11 @@ namespace Plantt.API
             service.AddTransient<IPasswordService, PasswordPBKDF2Service>();
             service.AddTransient<ITokenAuthenticationService, TokenAuthenticationService>();
             service.AddTransient<IAccountControllerService, AccountControllerService>();
+            service.AddTransient<IPlantControllerService, PlantControllerService>();
+            service.AddTransient<IHubControllerService, HubControllerService>();
+
+            // Middleware
+            service.AddTransient<GlobalExceptionHandlingMiddleware, GlobalExceptionHandlingMiddleware>();
 
             // Unit of work
             service.AddScoped<IUnitOfWork, UnitOfWork>();
@@ -54,13 +61,14 @@ namespace Plantt.API
             service.AddAutoMapper(typeof(AccountProfile));
 
             // Data context
-            service.AddDbContext<PlanttDbContext>((provider, options) =>
+            service.AddDbContext<PlanttDBContext>((provider, options) =>
             {
                 options.UseSqlServer(config["ConnectionStrings:Plantt"]);
             });
 
             service.AddControllers();
-            // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+
+            // Add Swagger
             service.AddEndpointsApiExplorer();
             service.AddSwaggerGen();
 
@@ -72,6 +80,7 @@ namespace Plantt.API
                 options.ReportApiVersions = true;
             });
 
+            // Add Authentication
             service.AddAuthentication(options =>
             {
                 options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -95,6 +104,23 @@ namespace Plantt.API
                 };
             });
 
+            // Configure Authorization
+            service.AddAuthorization(options =>
+            {
+                options.AddPolicy(AuthorizePolicies.Admin, policy => policy.RequireRole(AccountRoles.Admin.ToString()));
+
+                options.AddPolicy(AuthorizePolicies.Premium, policy => policy.RequireRole(
+                            AccountRoles.Admin.ToString(),
+                            AccountRoles.Premium.ToString()
+                        ));
+
+                options.AddPolicy(AuthorizePolicies.Registered, policy => policy.RequireRole(
+                            AccountRoles.Admin.ToString(),
+                            AccountRoles.Premium.ToString(),
+                            AccountRoles.Registred.ToString()
+                        ));
+            });
+
             //Logging setup
             builder.Logging.ClearProviders();
             builder.Host.UseSerilog((context, configuration) =>
@@ -109,11 +135,13 @@ namespace Plantt.API
 
             app.UseSerilogRequestLogging();
 
-            app.UseHttpsRedirection();
+            //app.UseHttpsRedirection();
 
             app.UseAuthentication();
 
             app.UseAuthorization();
+
+            app.UseMiddleware<GlobalExceptionHandlingMiddleware>();
 
             app.MapControllers();
 

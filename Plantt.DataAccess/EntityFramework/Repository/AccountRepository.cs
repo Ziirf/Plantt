@@ -6,18 +6,11 @@ namespace Plantt.DataAccess.EntityFramework.Repository
 {
     public class AccountRepository : GenericRepository<AccountEntity>, IAccountRepository
     {
-        private readonly PlanttDbContext _context;
+        private readonly PlanttDBContext _context;
 
-        public AccountRepository(PlanttDbContext context) : base(context) 
+        public AccountRepository(PlanttDBContext context) : base(context)
         {
             _context = context;
-        }
-
-        public AccountEntity? GetByUsername(string username)
-        {
-            return _context.Accounts
-                .OrderBy(account => account.Id)
-                .FirstOrDefault(account => account.Username == username);
         }
 
         public async Task<AccountEntity?> GetByUsernameAsync(string username)
@@ -25,13 +18,6 @@ namespace Plantt.DataAccess.EntityFramework.Repository
             return await _context.Accounts
                 .OrderBy(account => account.Id)
                 .FirstOrDefaultAsync(account => account.Username == username);
-        }
-
-        public AccountEntity? GetByGuid(Guid guid)
-        {
-            return _context.Accounts
-                .OrderBy(account => account.Id)
-                .FirstOrDefault(account => account.PublicId == guid);
         }
 
         public async Task<AccountEntity?> GetByGuidAsync(Guid guid)

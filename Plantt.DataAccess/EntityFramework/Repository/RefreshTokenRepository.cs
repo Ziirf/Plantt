@@ -6,9 +6,9 @@ namespace Plantt.DataAccess.EntityFramework.Repository
 {
     public class RefreshTokenRepository : GenericRepository<RefreshTokenEntity>, IRefreshTokenRepository
     {
-        private readonly PlanttDbContext _context;
+        private readonly PlanttDBContext _context;
 
-        public RefreshTokenRepository(PlanttDbContext context) : base(context)
+        public RefreshTokenRepository(PlanttDBContext context) : base(context)
         {
             _context = context;
         }

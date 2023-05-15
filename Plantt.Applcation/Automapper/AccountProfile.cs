@@ -9,8 +9,9 @@ namespace Plantt.Applcation.Automapper
     {
         public AccountProfile()
         {
-            CreateMap<AccountDto, AccountEntity>();
-            CreateMap<AccountEntity, AccountDto>();
+            CreateMap<AccountDTO, AccountEntity>();
+            CreateMap<AccountEntity, AccountDTO>()
+                .ForMember(dest => dest.Role, opt => opt.MapFrom(src => src.Role.ToString())); ;
 
             CreateMap<AccountEntity, Password>();
         }

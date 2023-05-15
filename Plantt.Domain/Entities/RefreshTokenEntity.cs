@@ -11,8 +11,10 @@ namespace Plantt.Domain.Entities
         public required bool Used { get; set; }
         public required DateTime IssuedTS { get; set; }
         public required DateTime ExpirationTS { get; set; }
-        [ForeignKey("TokenFamily")]
-        public int FK_TokenFamily_Id { get; set; }
+
+        [ForeignKey(nameof(TokenFamily))]
+        [Column("FK_TokenFamily_Id")]
+        public int TokenFamilyId { get; set; }
         public required TokenFamilyEntity TokenFamily { get; set; }
     }
 }

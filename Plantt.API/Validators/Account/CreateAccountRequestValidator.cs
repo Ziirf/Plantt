@@ -1,6 +1,6 @@
 ﻿using FluentValidation;
-using Plantt.Domain.DTOs.Requests;
-using Plantt.Domain.Interfaces.Repository;
+using Plantt.Domain.DTOs.Account.Request;
+using Plantt.Domain.Interfaces;
 
 namespace Plantt.API.Validators.Account
 {

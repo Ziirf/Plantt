@@ -1,9 +1,10 @@
 ﻿using AutoMapper;
-using Microsoft.EntityFrameworkCore;
-using Plantt.DataAccess.EntityFramework;
-using Plantt.Domain.DTOs.Requests;
+using Microsoft.Extensions.Logging;
+using Microsoft.Identity.Client;
+using Plantt.Domain.DTOs.Account.Request;
 using Plantt.Domain.Entities;
-using Plantt.Domain.Interfaces.Repository;
+using Plantt.Domain.Enums;
+using Plantt.Domain.Interfaces;
 using Plantt.Domain.Interfaces.Services;
 using Plantt.Domain.Models;
 
@@ -11,15 +12,18 @@ namespace Plantt.Applcation.Services.ControllerServices
 {
     public class AccountControllerService : IAccountControllerService
     {
+        private readonly ILogger<AccountControllerService> _logger;
         private readonly IPasswordService _passwordService;
         private readonly IMapper _mapper;
         private readonly IUnitOfWork _unitOfWork;
 
         public AccountControllerService(
+            ILogger<AccountControllerService> logger,
             IPasswordService passwordService,
             IMapper mapper,
             IUnitOfWork unitOfWork)
         {
+            _logger = logger;
             _passwordService = passwordService;
             _mapper = mapper;
             _unitOfWork = unitOfWork;
@@ -69,6 +73,22 @@ namespace Plantt.Applcation.Services.ControllerServices
             }
 
             return false;
+        }
+
+        public async Task<AccountEntity?> Upgrade(Guid publicId, AccountRoles role)
+        {
+            var entity = await _unitOfWork.AccountRepository.GetByGuidAsync(publicId);
+
+            if (entity is null)
+            {
+                return null;
+            }
+
+            entity.Role = role;
+            _unitOfWork.AccountRepository.Update(entity);
+            await _unitOfWork.CommitAsync();
+
+            return entity;
         }
     }
 }

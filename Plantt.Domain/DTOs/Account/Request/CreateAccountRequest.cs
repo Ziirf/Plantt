@@ -1,4 +1,4 @@
-﻿namespace Plantt.Domain.DTOs.Requests
+﻿namespace Plantt.Domain.DTOs.Account.Request
 {
     public class CreateAccountRequest
     {
