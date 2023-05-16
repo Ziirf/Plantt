@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using Plantt.Domain.Entities;
 using Plantt.Domain.Interfaces;
-using Plantt.Domain.Interfaces.Services;
+using Plantt.Domain.Interfaces.Services.EntityServices;
 
 namespace Plantt.Applcation.Services.EntityServices
 {
