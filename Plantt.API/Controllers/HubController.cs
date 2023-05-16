@@ -53,7 +53,6 @@ namespace Plantt.API.Controllers
             return Ok(requestBody);
         }
 
-        [Authorize]
         [Authorize(Policy = AuthorizePolicies.Premium)]
         [HttpPost("Register")]
         public async Task<IActionResult> RegisterHub([FromBody] CreateHubRequest request)
@@ -67,20 +66,19 @@ namespace Plantt.API.Controllers
             return Ok(response);
         }
 
-        [Authorize]
         [Authorize(Policy = AuthorizePolicies.Premium)]
         [HttpGet()]
         public async Task<IActionResult> GetHubs([FromQuery] bool includeSecret = false)
         {
-            var accountSubejct = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var accountSubejct = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
             if (accountSubejct is null || !Guid.TryParse(accountSubejct, out Guid accountGuid))
             {
                 return BadRequest(new ProblemDetails()
                 {
-                    Title = "No public Id was found",
-                    Detail = "Token or secret wasn't correct.",
-                    Status = StatusCodes.Status401Unauthorized
+                    Title = "Invalid guid",
+                    Detail = "Guid in token is invalid.",
+                    Status = StatusCodes.Status400BadRequest
                 });
             }
 

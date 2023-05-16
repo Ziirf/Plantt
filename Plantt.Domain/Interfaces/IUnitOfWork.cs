@@ -9,6 +9,8 @@ namespace Plantt.Domain.Interfaces
         ITokenFamilyRepository TokenFamilyRepository { get; }
         IPlantRepository PlantRepository { get; }
         IHubRepository HubRepository { get; }
+        IHomeRepository HomeRepository { get; }
+        IRoomRepository RoomRepository { get; }
 
         void Commit();
         Task CommitAsync();

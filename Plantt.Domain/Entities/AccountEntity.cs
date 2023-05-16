@@ -24,6 +24,6 @@ namespace Plantt.Domain.Entities
 
         public required int Iterations { get; set; }
 
-        public ICollection<TokenFamilyEntity> TokenFamilies { get; set; } = new List<TokenFamilyEntity>();
+        public IEnumerable<TokenFamilyEntity> TokenFamilies { get; set; } = new List<TokenFamilyEntity>();
     }
 }

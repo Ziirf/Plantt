@@ -11,7 +11,8 @@ namespace Plantt.Domain.Entities
 
         [ForeignKey(nameof(Account))]
         [Column("FK_Account_Id")]
-        public int AccountId { get; set; }
-        public required AccountEntity Account { get; set; }
+        public required int AccountId { get; set; }
+        public AccountEntity? Account { get; set; }
+        public ICollection<RoomEntity>? Rooms { get; set; }
     }
 }

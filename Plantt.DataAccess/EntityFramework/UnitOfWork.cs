@@ -71,6 +71,32 @@ namespace Plantt.DataAccess.EntityFramework
             }
         }
 
+        private IHomeRepository? _homeRepository;
+        public IHomeRepository HomeRepository
+        {
+            get
+            {
+                if (_homeRepository is null)
+                {
+                    _homeRepository = new HomeRepository(_context);
+                }
+                return _homeRepository;
+            }
+        }
+
+        private IRoomRepository? _roomRepository;
+        public IRoomRepository RoomRepository
+        {
+            get
+            {
+                if (_roomRepository is null)
+                {
+                    _roomRepository = new RoomRepository(_context);
+                }
+                return _roomRepository;
+            }
+        }
+
         private readonly PlanttDBContext _context;
         private bool _disposed = false;
 

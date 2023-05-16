@@ -1,18 +1,18 @@
-﻿using System;
+﻿using Plantt.Domain.DTOs.Room;
+using Plantt.Domain.Entities;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Plantt.Domain.DTOs.Hub
+namespace Plantt.Domain.DTOs.Home
 {
-    public class HubDTO
+    public class HomeDTO
     {
         public int Id { get; set; }
         public required string Name { get; set; }
-        public required string Identity { get; set; }
-        public required string HomeName { get; set; }
-        public required int HomeId { get; set; }
+        public List<RoomDTO>? Rooms { get; set; }
     }
 }

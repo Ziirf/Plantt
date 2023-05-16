@@ -78,7 +78,7 @@ namespace Plantt.Applcation.Services.ControllerServices
                     throw new NullReferenceException("Unable to find an account with that public Id");
                 }
 
-                HubEntity[] hubs = _unitOfWork.HubRepository.GetHubsFromAccount(account.Id).ToArray();
+                IEnumerable<HubEntity> hubs = _unitOfWork.HubRepository.GetHubsFromAccount(account.Id).ToArray();
 
                 return hubs;
             }

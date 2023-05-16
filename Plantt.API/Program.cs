@@ -45,9 +45,10 @@ namespace Plantt.API
             service.AddTransient<IAccountControllerService, AccountControllerService>();
             service.AddTransient<IPlantControllerService, PlantControllerService>();
             service.AddTransient<IHubControllerService, HubControllerService>();
+            service.AddTransient<IHomeControllerService, HomeControllerService>();
 
             // Middleware
-            service.AddTransient<GlobalExceptionHandlingMiddleware, GlobalExceptionHandlingMiddleware>();
+            service.AddTransient<GlobalExceptionHandlingMiddleware>();
 
             // Unit of work
             service.AddScoped<IUnitOfWork, UnitOfWork>();
