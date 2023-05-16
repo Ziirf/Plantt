@@ -1,14 +1,9 @@
 ﻿using Plantt.Domain.DTOs.Home.Request;
 using Plantt.Domain.Entities;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace Plantt.Domain.Interfaces.Services
+namespace Plantt.Domain.Interfaces.Services.EntityServices
 {
-    public interface IHomeControllerService
+    public interface IHomeService
     {
         Task<HomeEntity> CreateHomeAsync(CreateHomeRequest request, Guid accountGuid);
         Task DeleteHomeAsync(int id, Guid accountGuid);

@@ -1,12 +1,11 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore.InMemory.Storage.Internal;
 using Plantt.API.Constants;
 using Plantt.Domain.DTOs.Home;
 using Plantt.Domain.DTOs.Home.Request;
 using Plantt.Domain.Entities;
-using Plantt.Domain.Interfaces.Services;
+using Plantt.Domain.Interfaces.Services.EntityServices;
 using System.Security.Claims;
 
 namespace Plantt.API.Controllers
@@ -16,10 +15,10 @@ namespace Plantt.API.Controllers
     [Route("api/v{version:apiVersion}/[controller]")]
     public class HomeController : ControllerBase
     {
-        private readonly IHomeControllerService _homeService;
+        private readonly IHomeService _homeService;
         private readonly IMapper _mapper;
 
-        public HomeController(IHomeControllerService homeService, IMapper mapper)
+        public HomeController(IHomeService homeService, IMapper mapper)
         {
             _homeService = homeService;
             _mapper = mapper;
@@ -95,7 +94,7 @@ namespace Plantt.API.Controllers
 
             HomeEntity homeEntity = await _homeService.CreateHomeAsync(request, accountGuid);
 
-            return Ok(homeEntity);
+            return Ok(_mapper.Map<HomeDTO>(homeEntity));
         }
 
         [Authorize(Policy = AuthorizePolicies.Registered)]
@@ -116,7 +115,7 @@ namespace Plantt.API.Controllers
 
             HomeEntity homeEntity = await _homeService.UpdateHomeAsync(request, id, accountGuid);
 
-            return Ok(homeEntity);
+            return Ok(_mapper.Map<HomeDTO>(homeEntity));
         }
 
         [Authorize(Policy = AuthorizePolicies.Registered)]

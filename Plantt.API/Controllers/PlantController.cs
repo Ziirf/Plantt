@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Plantt.Domain.DTOs.Plant;
 using Plantt.Domain.Entities;
-using Plantt.Domain.Interfaces.Services;
+using Plantt.Domain.Interfaces.Services.EntityServices;
 
 namespace Plantt.API.Controllers
 {
@@ -13,10 +13,10 @@ namespace Plantt.API.Controllers
     public class PlantController : ControllerBase
     {
         private readonly int[] _pageSizes = { 10, 20, 50, 100 };
-        private readonly IPlantControllerService _plantService;
+        private readonly IPlantService _plantService;
         private readonly IMapper _mapper;
 
-        public PlantController(IPlantControllerService plantService, IMapper mapper)
+        public PlantController(IPlantService plantService, IMapper mapper)
         {
             _plantService = plantService;
             _mapper = mapper;

@@ -4,12 +4,12 @@ using Microsoft.AspNetCore.Mvc;
 using Plantt.API.Constants;
 using Plantt.Applcation.Services;
 using Plantt.Domain.DTOs.Account;
-using Plantt.Domain.DTOs.Account.Response;
 using Plantt.Domain.DTOs.Account.Request;
+using Plantt.Domain.DTOs.Account.Response;
 using Plantt.Domain.DTOs.RefreshToken;
 using Plantt.Domain.Entities;
 using Plantt.Domain.Enums;
-using Plantt.Domain.Interfaces.Services;
+using Plantt.Domain.Interfaces.Services.EntityServices;
 using System.Security.Claims;
 
 namespace Plantt.API.Controllers
@@ -20,13 +20,13 @@ namespace Plantt.API.Controllers
     public class AccountController : ControllerBase
     {
         private readonly ITokenAuthenticationService _tokenService;
-        private readonly IAccountControllerService _accountService;
+        private readonly IAccountService _accountService;
         private readonly IMapper _mapper;
         private readonly ILogger<AccountController> _logger;
 
         public AccountController(
             ITokenAuthenticationService authenticationService,
-            IAccountControllerService accountService,
+            IAccountService accountService,
             IMapper mapper,
             ILogger<AccountController> logger)
         {

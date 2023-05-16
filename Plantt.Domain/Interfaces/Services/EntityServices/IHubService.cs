@@ -1,8 +1,8 @@
 ﻿using Plantt.Domain.Entities;
 
-namespace Plantt.Domain.Interfaces.Services
+namespace Plantt.Domain.Interfaces.Services.EntityServices
 {
-    public interface IHubControllerService
+    public interface IHubService
     {
         Task<IEnumerable<HubEntity>> GetHubsFromAccount(Guid accountGuid);
         Task<HubEntity> RegistreHubAsync(int homeId, string name);

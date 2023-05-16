@@ -9,8 +9,7 @@ using Plantt.Domain.DTOs.Hub;
 using Plantt.Domain.DTOs.Hub.Request;
 using Plantt.Domain.DTOs.Hub.Response;
 using Plantt.Domain.Entities;
-using Plantt.Domain.Enums;
-using Plantt.Domain.Interfaces.Services;
+using Plantt.Domain.Interfaces.Services.EntityServices;
 using System.Security.Claims;
 
 namespace Plantt.API.Controllers
@@ -20,18 +19,18 @@ namespace Plantt.API.Controllers
     [Route("api/v{version:apiVersion}/[controller]")]
     public class HubController : ControllerBase
     {
-        private readonly IHubControllerService _hubService;
+        private readonly IHubService _hubService;
         private readonly ILogger<HubController> _logger;
         private readonly IMapper _mapper;
         private readonly ITokenAuthenticationService _tokenService;
-        private readonly IAccountControllerService _accountService;
+        private readonly IAccountService _accountService;
 
         public HubController(
-            IHubControllerService hubService,
+            IHubService hubService,
             ILogger<HubController> logger,
             IMapper mapper,
             ITokenAuthenticationService tokenService,
-            IAccountControllerService accountService)
+            IAccountService accountService)
         {
             _hubService = hubService;
             _logger = logger;
@@ -47,17 +46,13 @@ namespace Plantt.API.Controllers
             return Ok(requestBody);
         }
 
-        [HttpPost("test/{id}")]
-        public IActionResult PostHub([FromRoute] int id, [FromBody] dynamic requestBody)
-        {
-            return Ok(requestBody);
-        }
-
         [Authorize(Policy = AuthorizePolicies.Premium)]
         [HttpPost("Register")]
         public async Task<IActionResult> RegisterHub([FromBody] CreateHubRequest request)
         {
             // TODO: Check that account is owner of that home, from the User property.
+            // TODO: DELETE LOG
+            _logger.LogInformation("The body is {body}", request.ToString());
 
             var hubEntity = await _hubService.RegistreHubAsync(request.HomeId, request.Name);
 
@@ -70,9 +65,9 @@ namespace Plantt.API.Controllers
         [HttpGet()]
         public async Task<IActionResult> GetHubs([FromQuery] bool includeSecret = false)
         {
-            var accountSubejct = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var accountSubject = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-            if (accountSubejct is null || !Guid.TryParse(accountSubejct, out Guid accountGuid))
+            if (accountSubject is null || !Guid.TryParse(accountSubject, out Guid accountGuid))
             {
                 return BadRequest(new ProblemDetails()
                 {
@@ -86,15 +81,16 @@ namespace Plantt.API.Controllers
 
             if (includeSecret)
             {
-                return Ok(_mapper.Map< IEnumerable<HubWithSecretDTO>>(hubEntities));
+                return Ok(_mapper.Map<IEnumerable<HubWithSecretDTO>>(hubEntities));
             }
-            
-            return Ok(_mapper.Map< IEnumerable<HubDTO>>(hubEntities));
+
+            return Ok(_mapper.Map<IEnumerable<HubDTO>>(hubEntities));
         }
 
         [HttpPost("Login")]
         public async Task<IActionResult> LoginWithHub([FromBody] LoginHubRequest request)
         {
+            _logger.LogInformation("The body is {body}", request.ToString());
             bool loginVerified = await _hubService.VerifyHub(request.Identity, request.Secret);
 
             if (loginVerified is false)
@@ -107,10 +103,10 @@ namespace Plantt.API.Controllers
                 });
             }
 
-            TimeSpan expiresIn = TimeSpan.FromHours(1);
+            TimeSpan expiresIn = TimeSpan.FromMinutes(1);
             var accessToken = _tokenService.GenerateAccessToken(request.Identity, expiresIn, "Token");
 
-            return Ok(new LoginHubResponse() { ExpireTs = DateTime.UtcNow + expiresIn, accessToken = accessToken});
+            return Ok(new LoginHubResponse() { ExpireTs = DateTime.UtcNow + expiresIn, accessToken = accessToken });
         }
     }
 }

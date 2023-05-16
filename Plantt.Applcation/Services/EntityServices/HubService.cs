@@ -2,19 +2,17 @@
 using Microsoft.IdentityModel.Tokens;
 using Plantt.Domain.Entities;
 using Plantt.Domain.Interfaces;
-using Plantt.Domain.Interfaces.Services;
-using System;
-using System.Collections.Immutable;
+using Plantt.Domain.Interfaces.Services.EntityServices;
 using System.Security.Cryptography;
 
-namespace Plantt.Applcation.Services.ControllerServices
+namespace Plantt.Applcation.Services.EntityServices
 {
-    public class HubControllerService : IHubControllerService
+    public class HubService : IHubService
     {
         private readonly IUnitOfWork _unitOfWork;
-        private readonly ILogger<HubControllerService> _logger;
+        private readonly ILogger<HubService> _logger;
 
-        public HubControllerService(IUnitOfWork unitOfWork, ILogger<HubControllerService> logger)
+        public HubService(IUnitOfWork unitOfWork, ILogger<HubService> logger)
         {
             _unitOfWork = unitOfWork;
             _logger = logger;

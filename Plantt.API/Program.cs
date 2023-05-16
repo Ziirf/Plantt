@@ -7,12 +7,13 @@ using Plantt.API.Constants;
 using Plantt.API.Middleware;
 using Plantt.Applcation.Automapper;
 using Plantt.Applcation.Services;
-using Plantt.Applcation.Services.ControllerServices;
+using Plantt.Applcation.Services.EntityServices;
 using Plantt.DataAccess.EntityFramework;
 using Plantt.Domain.Config;
 using Plantt.Domain.Enums;
 using Plantt.Domain.Interfaces;
 using Plantt.Domain.Interfaces.Services;
+using Plantt.Domain.Interfaces.Services.EntityServices;
 using Serilog;
 
 namespace Plantt.API
@@ -42,10 +43,10 @@ namespace Plantt.API
             // Services
             service.AddTransient<IPasswordService, PasswordPBKDF2Service>();
             service.AddTransient<ITokenAuthenticationService, TokenAuthenticationService>();
-            service.AddTransient<IAccountControllerService, AccountControllerService>();
-            service.AddTransient<IPlantControllerService, PlantControllerService>();
-            service.AddTransient<IHubControllerService, HubControllerService>();
-            service.AddTransient<IHomeControllerService, HomeControllerService>();
+            service.AddTransient<IAccountService, AccountService>();
+            service.AddTransient<IPlantService, PlantService>();
+            service.AddTransient<IHubService, HubService>();
+            service.AddTransient<IHomeService, HomeService>();
 
             // Middleware
             service.AddTransient<GlobalExceptionHandlingMiddleware>();

@@ -2,9 +2,9 @@
 using Plantt.Domain.Entities;
 using Plantt.Domain.Enums;
 
-namespace Plantt.Domain.Interfaces.Services
+namespace Plantt.Domain.Interfaces.Services.EntityServices
 {
-    public interface IAccountControllerService
+    public interface IAccountService
     {
         Task<AccountEntity> CreateNewAccountAsync(CreateAccountRequest accountRequest);
         Task<AccountEntity?> GetAccountByGuidAsync(Guid guid);

@@ -2,20 +2,15 @@
 using Plantt.Domain.Entities;
 using Plantt.Domain.Exceptions;
 using Plantt.Domain.Interfaces;
-using Plantt.Domain.Interfaces.Services;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Plantt.Domain.Interfaces.Services.EntityServices;
 
-namespace Plantt.Applcation.Services.ControllerServices
+namespace Plantt.Applcation.Services.EntityServices
 {
-    public class HomeControllerService : IHomeControllerService
+    public class HomeService : IHomeService
     {
         private readonly IUnitOfWork _unitOfWork;
 
-        public HomeControllerService(IUnitOfWork unitOfWork)
+        public HomeService(IUnitOfWork unitOfWork)
         {
             _unitOfWork = unitOfWork;
         }

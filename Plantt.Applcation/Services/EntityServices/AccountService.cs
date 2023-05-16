@@ -1,24 +1,24 @@
 ﻿using AutoMapper;
 using Microsoft.Extensions.Logging;
-using Microsoft.Identity.Client;
 using Plantt.Domain.DTOs.Account.Request;
 using Plantt.Domain.Entities;
 using Plantt.Domain.Enums;
 using Plantt.Domain.Interfaces;
 using Plantt.Domain.Interfaces.Services;
+using Plantt.Domain.Interfaces.Services.EntityServices;
 using Plantt.Domain.Models;
 
-namespace Plantt.Applcation.Services.ControllerServices
+namespace Plantt.Applcation.Services.EntityServices
 {
-    public class AccountControllerService : IAccountControllerService
+    public class AccountService : IAccountService
     {
-        private readonly ILogger<AccountControllerService> _logger;
+        private readonly ILogger<AccountService> _logger;
         private readonly IPasswordService _passwordService;
         private readonly IMapper _mapper;
         private readonly IUnitOfWork _unitOfWork;
 
-        public AccountControllerService(
-            ILogger<AccountControllerService> logger,
+        public AccountService(
+            ILogger<AccountService> logger,
             IPasswordService passwordService,
             IMapper mapper,
             IUnitOfWork unitOfWork)

@@ -3,14 +3,14 @@ using Plantt.Domain.Entities;
 using Plantt.Domain.Interfaces;
 using Plantt.Domain.Interfaces.Services;
 
-namespace Plantt.Applcation.Services.ControllerServices
+namespace Plantt.Applcation.Services.EntityServices
 {
-    public class PlantControllerService : IPlantControllerService
+    public class PlantService : IPlantService
     {
         private readonly IUnitOfWork _unitOfWork;
-        private readonly ILogger<PlantControllerService> _logger;
+        private readonly ILogger<PlantService> _logger;
 
-        public PlantControllerService(IUnitOfWork unitOfWork, ILogger<PlantControllerService> logger)
+        public PlantService(IUnitOfWork unitOfWork, ILogger<PlantService> logger)
         {
             _unitOfWork = unitOfWork;
             _logger = logger;
