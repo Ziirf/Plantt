@@ -2,7 +2,7 @@
 {
     public class LoginHubResponse
     {
-        public required DateTime ExpireTs { get; set; }
-        public required string accessToken { get; set; }
+        public required long Expire { get; set; }
+        public required string AccessToken { get; set; }
     }
 }

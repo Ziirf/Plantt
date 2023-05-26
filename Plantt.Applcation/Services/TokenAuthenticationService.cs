@@ -30,18 +30,38 @@ namespace Plantt.Applcation.Services
             _unitOfWork = unitOfWork;
         }
 
+        /// <summary>
+        /// Generates an access token with the specified subject and role using the default time.
+        /// </summary>
+        /// <param name="subject">The subject associated with the access token.</param>
+        /// <param name="role">The role associated with the access token.</param>
+        /// <returns>A string representation of the generated access token.</returns>
         public string GenerateAccessToken(string subject, AccountRoles role = AccountRoles.Registred)
         {
-            var defaultTime = TimeSpan.FromMinutes(_jwtsettings.MinutesToLive);
+            var defaultTime = _jwtsettings.TimeToLive.Time;
 
             return GenerateAccessToken(subject, defaultTime, role.ToString());
         }
 
+        /// <summary>
+        /// Generates an access token with the specified subject, expiration time, and role.
+        /// </summary>
+        /// <param name="subject">The subject associated with the access token.</param>
+        /// <param name="expireIn">The duration for which the access token is valid.</param>
+        /// <param name="role">The role associated with the access token.</param>
+        /// <returns>A string representation of the generated access token.</returns>
         public string GenerateAccessToken(string subject, TimeSpan expireIn, AccountRoles role = AccountRoles.Registred)
         {
             return GenerateAccessToken(subject, expireIn, role.ToString());
         }
 
+        /// <summary>
+        /// Generates an access token with the specified subject, expiration time, and role.
+        /// </summary>
+        /// <param name="subject">The subject associated with the access token.</param>
+        /// <param name="expireIn">The duration for which the access token is valid.</param>
+        /// <param name="role">The role associated with the access token.</param>
+        /// <returns>A string representation of the generated access token.</returns>
         public string GenerateAccessToken(string subject, TimeSpan expireIn, string role)
         {
             byte[] key = _jwtsettings.SecretKeyBytes;
@@ -69,6 +89,12 @@ namespace Plantt.Applcation.Services
             return tokenHandler.WriteToken(token);
         }
 
+
+        /// <summary>
+        /// Generates a refresh token asynchronously for the specified token family.
+        /// </summary>
+        /// <param name="account">The account associated with the refresh token.</param>
+        /// <returns>The generated RefreshTokenEntity as a task.</returns>
         public async Task<RefreshTokenEntity> GenerateRefreshTokenAsync(AccountEntity account)
         {
             var tokenFamily = CreateTokenFamilyEntity(account);
@@ -78,16 +104,21 @@ namespace Plantt.Applcation.Services
             return refreshToken;
         }
 
+        /// <summary>
+        /// Generates a refresh token asynchronously for the specified token family.
+        /// </summary>
+        /// <param name="tokenFamily">The token family associated with the refresh token.</param>
+        /// <returns>The generated RefreshTokenEntity as a task.</returns>
         public async Task<RefreshTokenEntity> GenerateRefreshTokenAsync(TokenFamilyEntity tokenFamily)
         {
             DateTime utcNow = DateTime.UtcNow;
 
             var refreshToken = new RefreshTokenEntity()
             {
-                Token = Base64UrlEncoder.Encode(GenerateRanomByteArray(_refreshTokenSettins.RefreshTokenLength)),
+                Token = Base64UrlEncoder.Encode(GenerateRandomByteArray(_refreshTokenSettins.RefreshTokenLength)),
                 TokenFamily = tokenFamily,
                 IssuedTS = utcNow,
-                ExpirationTS = utcNow.AddDays(_refreshTokenSettins.DaysToLive),
+                ExpirationTS = utcNow.Add(_refreshTokenSettins.TimeToLive.Time),
                 Used = false
             };
 
@@ -97,25 +128,34 @@ namespace Plantt.Applcation.Services
             return refreshToken;
         }
 
+        /// <summary>
+        /// Generates a refresh token asynchronously for the specified account.
+        /// </summary>
+        /// <param name="account">The account associated with the refresh token.</param>
+        /// <returns>The generated RefreshTokenEntity as a task.</returns>
         public async Task<RefreshTokenEntity?> GetRefreshTokenAsync(string refreshToken)
         {
             return await _unitOfWork.RefreshTokenRepository.GetByRefreshTokenAsync(refreshToken);
         }
 
+        /// <summary>
+        /// Marks the specified refresh token as used asynchronously.
+        /// </summary>
+        /// <param name="refreshToken">The refresh token to mark as used.</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
         public async Task MarkRefreshTokenAsUsedAsync(RefreshTokenEntity refreshToken)
         {
-            try
-            {
-                refreshToken.Used = true;
-                _unitOfWork.RefreshTokenRepository.Update(refreshToken);
-                await _unitOfWork.CommitAsync();
-            }
-            catch (Exception exception)
-            {
-                _logger.LogError("Failed to mark refreshtoken as used", exception);
-            }
+            refreshToken.Used = true;
+            _unitOfWork.RefreshTokenRepository.Update(refreshToken);
+            await _unitOfWork.CommitAsync();
         }
 
+        /// <summary>
+        /// Revokes the specified token family asynchronously with the specified reason.
+        /// </summary>
+        /// <param name="tokenFamily">The token family to revoke.</param>
+        /// <param name="reason">The reason for revoking the token family.</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
         public async Task RevokeTokenFamilyAsync(TokenFamilyEntity tokenFamily, TokenFamilyRevokeReason reason)
         {
             tokenFamily.RevokeTS = DateTime.UtcNow;
@@ -125,6 +165,13 @@ namespace Plantt.Applcation.Services
             await _unitOfWork.CommitAsync();
         }
 
+        /// <summary>
+        /// Validates the specified refresh token asynchronously.
+        /// </summary>
+        /// <param name="refreshToken">The refresh token to validate.</param>
+        /// <returns>
+        ///     A bool that represent if the Refresh token is valid(true) or not(false), as a task.
+        /// </returns>
         public async Task<bool> ValidateRefreshTokenAsync(RefreshTokenEntity refreshToken)
         {
 
@@ -153,13 +200,13 @@ namespace Plantt.Applcation.Services
             var tokenFamily = new TokenFamilyEntity()
             {
                 Account = account,
-                Identifier = Base64UrlEncoder.Encode(GenerateRanomByteArray(_refreshTokenSettins.RefreshFamilyLength))
+                Identifier = Base64UrlEncoder.Encode(GenerateRandomByteArray(_refreshTokenSettins.RefreshFamilyLength))
             };
 
             return tokenFamily;
         }
 
-        private static byte[] GenerateRanomByteArray(int byteLength)
+        private static byte[] GenerateRandomByteArray(int byteLength)
         {
             var bytes = new byte[byteLength];
 

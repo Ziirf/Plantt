@@ -5,10 +5,11 @@ namespace Plantt.Domain.Interfaces.Services.EntityServices
 {
     public interface IHomeService
     {
-        Task<HomeEntity> CreateHomeAsync(CreateHomeRequest request, Guid accountGuid);
-        Task DeleteHomeAsync(int id, Guid accountGuid);
-        Task<IEnumerable<HomeEntity>> GetAccountHomesAsync(Guid accountGuid);
-        Task<HomeEntity?> GetAccountHomeByIdAsync(Guid accountGuid, int homeId);
-        Task<HomeEntity> UpdateHomeAsync(UpdateHomeRequest request, int id, Guid accountGuid);
+        IEnumerable<HomeEntity> GetAccountHomes(int accountId);
+        Task<HomeEntity?> GetAccountHomeByIdAsync(int accountId, int homeId);
+        Task<HomeEntity> CreateHomeAsync(UpdateHomeRequest request, int accountId);
+        Task<HomeEntity> UpdateHomeAsync(UpdateHomeRequest request, int id);
+        Task DeleteHomeAsync(int homeId);
+        Task<bool> ValidateOwnerAsync(int homeId, int accountId);
     }
 }

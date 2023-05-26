@@ -18,5 +18,6 @@ namespace Plantt.Domain.Entities
         [Column("FK_Plant_Id")]
         public int PlantId { get; set; }
         public PlantEntity? Plant { get; set; }
+        public ICollection<PlantDataEntity> PlantData { get; set; } = new List<PlantDataEntity>();
     }
 }

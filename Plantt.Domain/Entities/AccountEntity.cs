@@ -14,6 +14,7 @@ namespace Plantt.Domain.Entities
 
         public required string Username { get; set; }
 
+        [Column(TypeName = "varchar(200)")]
         public required string Email { get; set; }
 
         public AccountRoles Role { get; set; }
@@ -24,6 +25,6 @@ namespace Plantt.Domain.Entities
 
         public required int Iterations { get; set; }
 
-        public IEnumerable<TokenFamilyEntity> TokenFamilies { get; set; } = new List<TokenFamilyEntity>();
+        public ICollection<HomeEntity>? Homes { get; set; }
     }
 }

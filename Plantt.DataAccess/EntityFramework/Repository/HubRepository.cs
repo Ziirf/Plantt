@@ -15,12 +15,35 @@ namespace Plantt.DataAccess.EntityFramework.Repository
 
         public async Task<HubEntity?> GetHubByIdentityAsync(string identity)
         {
-            return await _context.Hubs.FirstOrDefaultAsync(hub => hub.Identity == identity);
+            return await _context.Hubs
+                .OrderBy(hub => hub.Id)
+                .FirstOrDefaultAsync(hub => hub.Identity == identity);
         }
 
         public IEnumerable<HubEntity> GetHubsFromAccount(int accountId)
         {
-            return _context.Hubs.Include(hub => hub.Home).Where(hub => hub.Home!.AccountId == accountId).AsNoTracking();
+            return _context.Hubs
+                .Include(hub => hub.Home)
+                .Where(hub => hub.Home!.AccountId == accountId)
+                .AsNoTracking();
+        }
+
+        public async Task<bool> IsValidOwnerAsync(int hubId, int accountId)
+        {
+            var result = await _context.Hubs
+                .OrderBy(hub => hub.Id)
+                .FirstOrDefaultAsync(hub => hub.Id == hubId && hub.Home!.AccountId == accountId);
+
+            return result is not null;
+        }
+
+        public bool IsValidOwner(int hubId, int accountId)
+        {
+            var result = _context.Hubs
+                .OrderBy(hub => hub.Id)
+                .FirstOrDefault(hub => hub.Id == hubId && hub.Home!.AccountId == accountId);
+
+            return result is not null;
         }
     }
 }

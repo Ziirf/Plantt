@@ -13,6 +13,6 @@ namespace Plantt.Domain.Entities
         [Column("FK_Account_Id")]
         public required int AccountId { get; set; }
         public AccountEntity? Account { get; set; }
-        public ICollection<RoomEntity>? Rooms { get; set; }
+        public ICollection<RoomEntity> Rooms { get; set; } = new List<RoomEntity>();
     }
 }

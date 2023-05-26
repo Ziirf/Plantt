@@ -1,19 +1,7 @@
-using FluentValidation;
-using FluentValidation.AspNetCore;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
-using Plantt.API.Constants;
+using Microsoft.AspNetCore.Mvc;
+using Plantt.API.Configurations;
 using Plantt.API.Middleware;
-using Plantt.Applcation.Automapper;
-using Plantt.Applcation.Services;
-using Plantt.Applcation.Services.EntityServices;
-using Plantt.DataAccess.EntityFramework;
 using Plantt.Domain.Config;
-using Plantt.Domain.Enums;
-using Plantt.Domain.Interfaces;
-using Plantt.Domain.Interfaces.Services;
-using Plantt.Domain.Interfaces.Services.EntityServices;
 using Serilog;
 
 namespace Plantt.API
@@ -24,124 +12,52 @@ namespace Plantt.API
         {
             var builder = WebApplication.CreateBuilder(args);
             var config = builder.Configuration;
-            var service = builder.Services;
+            var services = builder.Services;
 
-            // Add services to the container.
-            var jwtSection = config.GetSection("JWTSettings");
-            var jwtSettings = jwtSection?.Get<JsonWebTokenSettings>();
+            services.AddControllers(options =>
+                options.Filters.Add(new ProducesAttribute("application/json"))
+            );
 
-            if (jwtSettings is null || jwtSection is null)
-            {
-                throw new ApplicationException("JWTSettings section not found in appsettings.");
-            }
+            services.Configure<PasswordSettings>(config.GetSection("PasswordSettings"));
+            services.Configure<RefreshTokenSettings>(config.GetSection("RefreshTokenSettings"));
+            services.Configure<HubSettings>(config.GetSection("HubSettings"));
 
-            // ConfigSettings
-            service.Configure<JsonWebTokenSettings>(jwtSection);
-            service.Configure<PasswordSettings>(config.GetSection("PasswordSettings"));
-            service.Configure<RefreshTokenSettings>(config.GetSection("RefreshTokenSettings"));
+            // These services can be found in DependencyInjection.cs
+            services
+                .AddJsonWebTokenAuthentication(config)
+                .AddPlanttAuthorization()
+                .AddEntityServices()
+                .AddMiddleware()
+                .AddInfrastructure(config)
+                .AddValidator()
+                .AddSwagger()
+                .AddVersioning()
+                .AddMapper();
 
-            // Services
-            service.AddTransient<IPasswordService, PasswordPBKDF2Service>();
-            service.AddTransient<ITokenAuthenticationService, TokenAuthenticationService>();
-            service.AddTransient<IAccountService, AccountService>();
-            service.AddTransient<IPlantService, PlantService>();
-            service.AddTransient<IHubService, HubService>();
-            service.AddTransient<IHomeService, HomeService>();
-
-            // Middleware
-            service.AddTransient<GlobalExceptionHandlingMiddleware>();
-
-            // Unit of work
-            service.AddScoped<IUnitOfWork, UnitOfWork>();
-
-            // Fluent Validation
-            service.AddFluentValidationAutoValidation();
-            service.AddFluentValidationClientsideAdapters();
-            service.AddValidatorsFromAssemblyContaining<Program>();
-
-            // Automapper
-            service.AddAutoMapper(typeof(AccountProfile));
-
-            // Data context
-            service.AddDbContext<PlanttDBContext>((provider, options) =>
-            {
-                options.UseSqlServer(config["ConnectionStrings:Plantt"]);
-            });
-
-            service.AddControllers();
-
-            // Add Swagger
-            service.AddEndpointsApiExplorer();
-            service.AddSwaggerGen();
-
-
-            // Add versioning.
-            service.AddApiVersioning(options =>
-            {
-                options.AssumeDefaultVersionWhenUnspecified = true;
-                options.ReportApiVersions = true;
-            });
-
-            // Add Authentication
-            service.AddAuthentication(options =>
-            {
-                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-            })
-            .AddJwtBearer(options =>
-            {
-                options.RequireHttpsMetadata = true;
-                options.SaveToken = true;
-                options.TokenValidationParameters = new TokenValidationParameters
-                {
-                    ClockSkew = TimeSpan.FromMinutes(3),
-                    ValidateLifetime = true,
-
-                    ValidateIssuer = false,
-                    ValidIssuer = jwtSettings.Issuer,
-
-                    ValidateAudience = false,
-                    ValidateIssuerSigningKey = false,
-                    IssuerSigningKey = new SymmetricSecurityKey(jwtSettings.SecretKeyBytes),
-                };
-            });
-
-            // Configure Authorization
-            service.AddAuthorization(options =>
-            {
-                options.AddPolicy(AuthorizePolicies.Admin, policy => policy.RequireRole(AccountRoles.Admin.ToString()));
-
-                options.AddPolicy(AuthorizePolicies.Premium, policy => policy.RequireRole(
-                            AccountRoles.Admin.ToString(),
-                            AccountRoles.Premium.ToString()
-                        ));
-
-                options.AddPolicy(AuthorizePolicies.Registered, policy => policy.RequireRole(
-                            AccountRoles.Admin.ToString(),
-                            AccountRoles.Premium.ToString(),
-                            AccountRoles.Registred.ToString()
-                        ));
-            });
-
-            //Logging setup
+            // Logging setup
             builder.Logging.ClearProviders();
             builder.Host.UseSerilog((context, configuration) =>
                 configuration.ReadFrom.Configuration(context.Configuration));
 
-
             var app = builder.Build();
 
-            //Configure the HTTP request pipeline.
+            // Configure the HTTP request pipeline.
             app.UseSwagger();
+
             app.UseSwaggerUI();
 
             app.UseSerilogRequestLogging();
+
+            // This is commented out as there were some problems getting certificates to work correctly -
+            // on the android app and microcontroller, worked fine on postman though.
 
             //app.UseHttpsRedirection();
 
             app.UseAuthentication();
 
             app.UseAuthorization();
+
+            app.UseMiddleware<AccountFromTokenMiddleware>();
 
             app.UseMiddleware<GlobalExceptionHandlingMiddleware>();
 

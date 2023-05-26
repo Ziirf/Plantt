@@ -10,6 +10,5 @@
         void Delete(int id);
         Task<TEntity?> GetByIdAsync(int id);
         Task AddAsync(TEntity entity);
-        IEnumerable<TEntity> Where(Func<TEntity, bool> predicate);
     }
 }

@@ -4,6 +4,6 @@
     {
         public int RefreshTokenLength { get; set; }
         public int RefreshFamilyLength { get; set; }
-        public int DaysToLive { get; set; }
+        public TimeToLiveSettings TimeToLive { get; set; } = default!;
     }
 }

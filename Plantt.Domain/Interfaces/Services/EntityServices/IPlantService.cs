@@ -4,7 +4,7 @@ namespace Plantt.Domain.Interfaces.Services.EntityServices
 {
     public interface IPlantService
     {
-        Task<PlantEntity?> GetPlantById(int id);
-        Task<IEnumerable<PlantEntity>?> GetPlantPage(int amount, int page);
+        Task<IEnumerable<PlantEntity>?> GetPlantPageAsync(int amount, int page, string? search = null);
+        Task<PlantEntity?> GetPlantByIdAsync(int id);
     }
 }

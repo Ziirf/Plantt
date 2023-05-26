@@ -1,6 +1,6 @@
-﻿namespace Plantt.Domain.Models
+﻿namespace Plantt.Domain.DTOs.Account
 {
-    public class Password
+    public class PasswordDTO
     {
         public required byte[] HashedPassword { get; init; }
         public required byte[] Salt { get; init; }

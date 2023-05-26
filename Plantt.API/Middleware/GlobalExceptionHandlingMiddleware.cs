@@ -1,5 +1,6 @@
 ﻿using Azure.Core;
 using Microsoft.AspNetCore.Mvc;
+using System.Net;
 using System.Text.Json;
 
 namespace Plantt.API.Middleware
@@ -21,23 +22,24 @@ namespace Plantt.API.Middleware
             }
             catch (Exception error)
             {
-                _logger.LogError(error, error.Message);
+                _logger.LogError(error, "Unhandled exception occured: {target} {stacktrace} {innerException}", error.TargetSite, error.StackTrace, error.InnerException);
 
-                int statusCode = StatusCodes.Status500InternalServerError;
-
-                context.Response.StatusCode = statusCode;
+                context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
 
                 ProblemDetails problem = new ProblemDetails()
                 {
                     Title = "An error occurred",
                     Detail = error.Message,
-                    Status = statusCode
+                    Status = StatusCodes.Status500InternalServerError
                 };
-                context.Response.ContentType = ContentType.ApplicationJson.ToString();
 
                 string problemJson = JsonSerializer.Serialize(problem);
 
+                context.Response.ContentType = ContentType.ApplicationJson.ToString();
+
                 await context.Response.WriteAsync(problemJson);
+
+                throw;
             }
         }
     }

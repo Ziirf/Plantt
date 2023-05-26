@@ -6,11 +6,10 @@ namespace Plantt.Domain.Interfaces.Services.EntityServices
 {
     public interface IAccountService
     {
-        Task<AccountEntity> CreateNewAccountAsync(CreateAccountRequest accountRequest);
-        Task<AccountEntity?> GetAccountByGuidAsync(Guid guid);
         Task<AccountEntity?> GetAccountByIdAsync(int id);
         Task<AccountEntity?> GetAccountByUsernameAsync(string username);
-        Task<AccountEntity?> Upgrade(Guid publicId, AccountRoles role);
+        Task<AccountEntity> CreateNewAccountAsync(CreateAccountRequest accountRequest);
+        Task<AccountEntity?> ChangeAccountRoleAsync(AccountEntity account, AccountRoles role);
         bool VerifyPassword(AccountEntity account, string password);
     }
 }

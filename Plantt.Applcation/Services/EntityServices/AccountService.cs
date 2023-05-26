@@ -1,37 +1,28 @@
 ﻿using AutoMapper;
-using Microsoft.Extensions.Logging;
+using Plantt.Domain.DTOs.Account;
 using Plantt.Domain.DTOs.Account.Request;
 using Plantt.Domain.Entities;
 using Plantt.Domain.Enums;
 using Plantt.Domain.Interfaces;
 using Plantt.Domain.Interfaces.Services;
 using Plantt.Domain.Interfaces.Services.EntityServices;
-using Plantt.Domain.Models;
 
 namespace Plantt.Applcation.Services.EntityServices
 {
     public class AccountService : IAccountService
     {
-        private readonly ILogger<AccountService> _logger;
         private readonly IPasswordService _passwordService;
         private readonly IMapper _mapper;
         private readonly IUnitOfWork _unitOfWork;
 
         public AccountService(
-            ILogger<AccountService> logger,
             IPasswordService passwordService,
             IMapper mapper,
             IUnitOfWork unitOfWork)
         {
-            _logger = logger;
             _passwordService = passwordService;
             _mapper = mapper;
             _unitOfWork = unitOfWork;
-        }
-
-        public async Task<AccountEntity?> GetAccountByGuidAsync(Guid guid)
-        {
-            return await _unitOfWork.AccountRepository.GetByGuidAsync(guid);
         }
 
         public async Task<AccountEntity?> GetAccountByIdAsync(int id)
@@ -46,7 +37,7 @@ namespace Plantt.Applcation.Services.EntityServices
 
         public async Task<AccountEntity> CreateNewAccountAsync(CreateAccountRequest accountRequest)
         {
-            Password password = _passwordService.CreatePassword(accountRequest.Password);
+            PasswordDTO password = _passwordService.CreatePassword(accountRequest.Password);
 
             var newAccount = new AccountEntity()
             {
@@ -65,7 +56,7 @@ namespace Plantt.Applcation.Services.EntityServices
 
         public bool VerifyPassword(AccountEntity account, string password)
         {
-            Password storedPassword = _mapper.Map<Password>(account);
+            PasswordDTO storedPassword = _mapper.Map<PasswordDTO>(account);
 
             if (_passwordService.VerifyPassword(password, storedPassword))
             {
@@ -75,20 +66,13 @@ namespace Plantt.Applcation.Services.EntityServices
             return false;
         }
 
-        public async Task<AccountEntity?> Upgrade(Guid publicId, AccountRoles role)
+        public async Task<AccountEntity?> ChangeAccountRoleAsync(AccountEntity account, AccountRoles role)
         {
-            var entity = await _unitOfWork.AccountRepository.GetByGuidAsync(publicId);
-
-            if (entity is null)
-            {
-                return null;
-            }
-
-            entity.Role = role;
-            _unitOfWork.AccountRepository.Update(entity);
+            account.Role = role;
+            _unitOfWork.AccountRepository.Update(account);
             await _unitOfWork.CommitAsync();
 
-            return entity;
+            return account;
         }
     }
 }

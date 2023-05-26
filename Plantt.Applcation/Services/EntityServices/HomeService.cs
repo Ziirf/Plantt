@@ -15,98 +15,66 @@ namespace Plantt.Applcation.Services.EntityServices
             _unitOfWork = unitOfWork;
         }
 
-        public async Task<IEnumerable<HomeEntity>> GetAccountHomesAsync(Guid accountGuid)
+        public IEnumerable<HomeEntity> GetAccountHomes(int accountId)
         {
-            var account = await _unitOfWork.AccountRepository.GetByGuidAsync(accountGuid);
-
-            if (account is null)
-            {
-                throw new AccountNotFoundException($"No account found with the guid: {accountGuid}");
-            }
-
-            IEnumerable<HomeEntity> homes = _unitOfWork.HomeRepository.GetAccountHome(account.Id).ToList();
-
-            return homes;
+            return _unitOfWork.HomeRepository.GetAccountHome(accountId).ToList();
         }
 
-        public async Task<HomeEntity?> GetAccountHomeByIdAsync(Guid accountGuid, int homeId)
+        public async Task<HomeEntity?> GetAccountHomeByIdAsync(int accountId, int homeId)
         {
-            var account = await _unitOfWork.AccountRepository.GetByGuidAsync(accountGuid);
-
-            if (account is null)
-            {
-                throw new AccountNotFoundException($"No account found with the guid: {accountGuid}");
-            }
-
-            HomeEntity? home = await _unitOfWork.HomeRepository.GetAccountHomeByIdAsync(account.Id, homeId);
-
-            return home;
+            return await _unitOfWork.HomeRepository.GetAccountHomeByIdAsync(accountId, homeId);
         }
 
-        public async Task<HomeEntity> CreateHomeAsync(CreateHomeRequest request, Guid accountGuid)
+        public async Task<HomeEntity> CreateHomeAsync(UpdateHomeRequest request, int accountId)
         {
-            var account = await _unitOfWork.AccountRepository.GetByGuidAsync(accountGuid);
-
-            if (account is null)
-            {
-                throw new AccountNotFoundException($"No account found with the guid: {accountGuid}");
-            }
-
             var homeEntity = new HomeEntity()
             {
                 Name = request.Name,
-                AccountId = account.Id
+                AccountId = accountId
             };
 
             _unitOfWork.HomeRepository.Add(homeEntity);
+
             await _unitOfWork.CommitAsync();
 
             return homeEntity;
         }
 
-        public async Task<HomeEntity> UpdateHomeAsync(UpdateHomeRequest request, int id, Guid accountGuid)
+        public async Task<HomeEntity> UpdateHomeAsync(UpdateHomeRequest request, int id)
         {
-            var account = await _unitOfWork.AccountRepository.GetByGuidAsync(accountGuid);
-
-            if (account is null)
-            {
-                throw new AccountNotFoundException($"No account found with the guid: {accountGuid}");
-            }
-
             HomeEntity? homeEntity = _unitOfWork.HomeRepository.GetById(id);
 
-
-            if (homeEntity is null || homeEntity.AccountId != account.Id)
+            if (homeEntity is null)
             {
-                throw new Exception("No home with that id was found on that account.");
+                throw new NoEntryFoundException("No home with that id was found.");
             }
 
             homeEntity.Name = request.Name;
 
             _unitOfWork.HomeRepository.Update(homeEntity);
+
             await _unitOfWork.CommitAsync();
 
             return homeEntity;
         }
 
-        public async Task DeleteHomeAsync(int id, Guid accountGuid)
+        public async Task DeleteHomeAsync(int homeId)
         {
-            var account = await _unitOfWork.AccountRepository.GetByGuidAsync(accountGuid);
+            HomeEntity? homeEntity = await _unitOfWork.HomeRepository.GetByIdAsync(homeId);
 
-            if (account is null)
+            if (homeEntity is null)
             {
-                throw new AccountNotFoundException($"No account found with the guid: {accountGuid}");
-            }
-
-            HomeEntity? homeEntity = _unitOfWork.HomeRepository.GetById(id);
-
-            if (homeEntity is null || homeEntity.AccountId != account.Id)
-            {
-                throw new Exception("No home with that id was found on that account.");
+                throw new NoEntryFoundException("No home with that id was found.");
             }
 
             _unitOfWork.HomeRepository.Delete(homeEntity);
+
             await _unitOfWork.CommitAsync();
+        }
+
+        public async Task<bool> ValidateOwnerAsync(int homeId, int accountId)
+        {
+            return await _unitOfWork.HomeRepository.IsValidOwnerAsync(homeId, accountId);
         }
     }
 }

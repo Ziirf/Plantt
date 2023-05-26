@@ -10,44 +10,37 @@ using Plantt.Domain.DTOs.RefreshToken;
 using Plantt.Domain.Entities;
 using Plantt.Domain.Enums;
 using Plantt.Domain.Interfaces.Services.EntityServices;
-using System.Security.Claims;
 
 namespace Plantt.API.Controllers
 {
     [ApiController]
     [ApiVersion("1.0")]
     [Route("api/v{version:apiVersion}/[controller]")]
-    public class AccountController : ControllerBase
+    public class AccountController : ControllerExtention
     {
         private readonly ITokenAuthenticationService _tokenService;
         private readonly IAccountService _accountService;
         private readonly IMapper _mapper;
-        private readonly ILogger<AccountController> _logger;
 
         public AccountController(
             ITokenAuthenticationService authenticationService,
             IAccountService accountService,
-            IMapper mapper,
-            ILogger<AccountController> logger)
+            IMapper mapper)
         {
             _tokenService = authenticationService;
             _accountService = accountService;
             _mapper = mapper;
-            _logger = logger;
         }
-
-        [HttpGet("Auth")]
-        [Authorize(Policy = AuthorizePolicies.Registered)]
-        public IActionResult Auth()
-        {
-            return Ok();
-        }
-
 
         [HttpPost("Create")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(TokenAuthenticationResponse))]
         public async Task<IActionResult> CreateNewAccountEndpoint([FromBody] CreateAccountRequest request)
         {
+            // Create account
+
             AccountEntity account = await _accountService.CreateNewAccountAsync(request);
+
+            // Generate access token and refresh token for credentials
 
             string accessToken = _tokenService.GenerateAccessToken(account.PublicId.ToString(), account.Role);
             RefreshTokenEntity refreshToken = await _tokenService.GenerateRefreshTokenAsync(account);
@@ -63,31 +56,25 @@ namespace Plantt.API.Controllers
         }
 
         [HttpPost("Login")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(TokenAuthenticationResponse))]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> LoginEndpoint([FromBody] LoginRequest request)
         {
+            // Verify login
+
             AccountEntity? account = await _accountService.GetAccountByUsernameAsync(request.Username);
 
-            if (account is null)
+            if (account is null || _accountService.VerifyPassword(account, request.Password) is not true)
             {
-                return NotFound(new ProblemDetails()
+                return BadRequest(new ProblemDetails()
                 {
-                    Title = "Account not found.",
-                    Detail = "Can't find account with that username.",
-                    Status = StatusCodes.Status404NotFound
+                    Title = "Invalid Login",
+                    Detail = "Username and password didn't match.",
+                    Status = StatusCodes.Status403Forbidden
                 });
             }
 
-            if (!_accountService.VerifyPassword(account, request.Password))
-            {
-                return Unauthorized(new ProblemDetails()
-                {
-                    Title = "Wrong Password",
-                    Detail = "Password didn't match the account.",
-                    Status = StatusCodes.Status401Unauthorized
-                });
-            }
-
-            //TODO: Make a threshold on how many attempts you can use, before the account is softlocked, and the owner is warned.
+            // Generate access token and refresh token for credentials
 
             string accessToken = _tokenService.GenerateAccessToken(account.PublicId.ToString(), account.Role);
             RefreshTokenEntity refreshToken = await _tokenService.GenerateRefreshTokenAsync(account);
@@ -103,60 +90,11 @@ namespace Plantt.API.Controllers
         }
 
         [HttpGet("Logout/{token}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> LogoutEndpoint([FromRoute] string token)
         {
-            RefreshTokenEntity? refreshToken = await _tokenService.GetRefreshTokenAsync(token);
-
-            if (refreshToken is not null)
-            {
-                await _tokenService.MarkRefreshTokenAsUsedAsync(refreshToken);
-                await _tokenService.RevokeTokenFamilyAsync(refreshToken.TokenFamily, TokenFamilyRevokeReason.LoggedOut);
-
-                return NoContent();
-            }
-
-            return NotFound(new ProblemDetails()
-            {
-                Title = "Refreshtoken not found.",
-                Detail = "Was unable to find the refreshtoken in the system.",
-                Status = StatusCodes.Status404NotFound
-            });
-        }
-
-        [Authorize]
-        [HttpPatch("Upgrade/{role}")]
-        public async Task<IActionResult> UpgradeEndpoint([FromRoute] AccountRoles role)
-        {
-            var accountSubejct = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-            if (accountSubejct is null || !Guid.TryParse(accountSubejct, out Guid accountGuid))
-            {
-                return BadRequest(new ProblemDetails()
-                {
-                    Title = "No public Id was found",
-                    Detail = "Token or secret wasn't correct.",
-                    Status = StatusCodes.Status401Unauthorized
-                });
-            }
-
-            var entity = await _accountService.Upgrade(accountGuid, role);
-
-            if (entity is null)
-            {
-                return NotFound(new ProblemDetails()
-                {
-                    Title = "Account not found.",
-                    Detail = "Can't find account with that username.",
-                    Status = StatusCodes.Status404NotFound
-                });
-            }
-
-            return Ok(_mapper.Map<AccountDTO>(entity));
-        }
-
-        [HttpGet("Refresh/{token}")]
-        public async Task<IActionResult> RefreshTokenEndpoint([FromRoute] string token)
-        {
+            // Find the token in the database.
 
             RefreshTokenEntity? refreshToken = await _tokenService.GetRefreshTokenAsync(token);
 
@@ -170,9 +108,53 @@ namespace Plantt.API.Controllers
                 });
             }
 
-            bool tokenValid = await _tokenService.ValidateRefreshTokenAsync(refreshToken);
+            // Mark it as invalid so it can't be missused.
 
-            if (!tokenValid)
+            await _tokenService.MarkRefreshTokenAsUsedAsync(refreshToken);
+            await _tokenService.RevokeTokenFamilyAsync(refreshToken.TokenFamily, TokenFamilyRevokeReason.LoggedOut);
+
+            return NoContent();
+        }
+
+        [HttpPatch("Upgrade/{role}")]
+        [Authorize(Policy = AuthorizePolicyConstant.Registered)]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(AccountDTO))]
+        public async Task<IActionResult> UpgradeEndpoint([FromRoute] AccountRoles role)
+        {
+            // Get account, upgrade it, and return the newe account. - it wont take effect before they refresh their access token.
+
+            AccountEntity account = GetAccountFromHttpContext();
+
+            await _accountService.ChangeAccountRoleAsync(account, role);
+
+            return Ok(_mapper.Map<AccountDTO>(account));
+        }
+
+        [HttpGet("Refresh/{token}")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(TokenAuthenticationResponse))]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> RefreshTokenEndpoint([FromRoute] string token)
+        {
+            // Get the refresh token from the database for validation.
+
+            RefreshTokenEntity? refreshToken = await _tokenService.GetRefreshTokenAsync(token);
+
+            if (refreshToken is null)
+            {
+                return NotFound(new ProblemDetails()
+                {
+                    Title = "Refreshtoken not found.",
+                    Detail = "Was unable to find the refreshtoken in the system.",
+                    Status = StatusCodes.Status404NotFound
+                });
+            }
+
+            // Check if the token is valid, checking if token is used, expired or have been revoked.
+
+            bool isTokenValid = await _tokenService.ValidateRefreshTokenAsync(refreshToken);
+
+            if (isTokenValid is false)
             {
                 return BadRequest(new ProblemDetails()
                 {
@@ -182,9 +164,11 @@ namespace Plantt.API.Controllers
                 });
             }
 
+            // Mark the token as used, in case of reuse, this would compromise the security of the account.
+
             await _tokenService.MarkRefreshTokenAsUsedAsync(refreshToken);
 
-            var account = await _accountService.GetAccountByIdAsync(refreshToken.TokenFamily.AccountId);
+            AccountEntity? account = await _accountService.GetAccountByIdAsync(refreshToken.TokenFamily.AccountId);
 
             if (account is null)
             {
@@ -195,6 +179,8 @@ namespace Plantt.API.Controllers
                     Status = StatusCodes.Status404NotFound
                 });
             }
+
+            // Generating new access token, and refresh token.
 
             string accessToken = _tokenService.GenerateAccessToken(account.PublicId.ToString(), account.Role);
             RefreshTokenEntity newRefreshToken = await _tokenService.GenerateRefreshTokenAsync(refreshToken.TokenFamily);

@@ -8,9 +8,9 @@ namespace Plantt.Domain.Entities
     {
         public int Id { get; set; }
         public required int Moisture { get; set; }
-        public required int Lux { get; set; }
-        public required int TemperatureC { get; set; }
-        public required int Humidity { get; set; }
+        public required double Lux { get; set; }
+        public required double TemperatureC { get; set; }
+        public required double Humidity { get; set; }
         public required DateTime CreatedTS { get; set; }
 
         [ForeignKey(nameof(AccountPlant))]

@@ -2,7 +2,6 @@
 {
     public class AccountNotFoundException : Exception
     {
-
         public AccountNotFoundException()
         {
         }

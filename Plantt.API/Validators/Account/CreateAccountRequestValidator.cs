@@ -15,28 +15,35 @@ namespace Plantt.API.Validators.Account
 
             RuleFor(account => account.Username)
                 .NotEmpty()
-                .WithMessage("Username can't be empty.")
+                .WithMessage("{PropertyName} can't be empty.")
                 .Must(username => username.All(char.IsLetterOrDigit))
-                .WithMessage("Must only contain letters and digits.")
-                .Must(username =>
-                {
-                    return _unitOfWork.AccountRepository.DoesUsernameExist(username) is false;
-                })
-                .WithMessage("Username already exists.");
+                .WithMessage("{PropertyName} must only contain letters and digits.")
+                .Must(IsUniqueUsername)
+                .WithMessage("{PropertyName} already exists.");
 
             RuleFor(account => account.Password)
                 .NotEmpty()
-                .WithMessage("Password can't be empty.")
+                .WithMessage("{PropertyName} can't be empty.")
                 .MinimumLength(8)
-                .WithMessage("Password need to be at least 8 characters long")
-                .Must(password => password.Any(char.IsLetter) && password.Any(char.IsDigit))
-                .WithMessage("Password must include both letters and digits");
+                .WithMessage("{PropertyName} need to be at least {MinLength} characters long")
+                .Must(ContainsBothDigitsAndLetters)
+                .WithMessage("{PropertyName} must include both letters and digits");
 
             RuleFor(account => account.Email)
                 .NotEmpty()
-                .WithMessage("Email can't be empty.")
+                .WithMessage("{PropertyName} can't be empty.")
                 .EmailAddress()
-                .WithMessage("Email must be a valid email.");
+                .WithMessage("{PropertyName} must be a valid email.");
+        }
+
+        private bool IsUniqueUsername(string username)
+        {
+            return _unitOfWork.AccountRepository.DoesUsernameExist(username) is false;
+        }
+
+        private bool ContainsBothDigitsAndLetters(string password)
+        {
+            return password.Any(char.IsLetter) && password.Any(char.IsDigit);
         }
     }
 }

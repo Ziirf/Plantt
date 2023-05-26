@@ -19,6 +19,19 @@ namespace Plantt.DataAccess.EntityFramework
             }
         }
 
+        private IAccountPlantRepository? _accountPlantRepository;
+        public IAccountPlantRepository AccountPlantRepository
+        {
+            get
+            {
+                if (_accountPlantRepository is null)
+                {
+                    _accountPlantRepository = new AccountPlantRepository(_context);
+                }
+                return _accountPlantRepository;
+            }
+        }
+
         private IRefreshTokenRepository? _refreshTokenRepository;
         public IRefreshTokenRepository RefreshTokenRepository
         {
@@ -68,6 +81,32 @@ namespace Plantt.DataAccess.EntityFramework
                     _hubRepository = new HubRepository(_context);
                 }
                 return _hubRepository;
+            }
+        }
+
+        private ISensorRepository? _sensorRepository;
+        public ISensorRepository SensorRepository
+        {
+            get
+            {
+                if (_sensorRepository is null)
+                {
+                    _sensorRepository = new SensorRepository(_context);
+                }
+                return _sensorRepository;
+            }
+        }
+
+        private IPlantDataRepository? _plantDataRepository;
+        public IPlantDataRepository PlantDataRepository
+        {
+            get
+            {
+                if (_plantDataRepository is null)
+                {
+                    _plantDataRepository = new PlantDataRepository(_context);
+                }
+                return _plantDataRepository;
             }
         }
 

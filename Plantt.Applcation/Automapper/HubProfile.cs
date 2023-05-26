@@ -11,11 +11,8 @@ namespace Plantt.Applcation.Automapper
         {
             CreateMap<HubEntity, CreateHubResponse>();
 
-            CreateMap<HubEntity, HubWithSecretDTO>()
-                .ForMember(dest => dest.HomeName, opt => opt.MapFrom(src => src.Home.Name));
-
             CreateMap<HubEntity, HubDTO>()
-                .ForMember(dest => dest.HomeName, opt => opt.MapFrom(src => src.Home.Name));
+                .ForMember(dest => dest.HomeName, opt => opt.MapFrom(src => src.Home!.Name));
         }
     }
 }

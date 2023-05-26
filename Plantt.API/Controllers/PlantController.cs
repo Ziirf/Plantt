@@ -1,9 +1,9 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Plantt.Domain.DTOs.Plant;
 using Plantt.Domain.Entities;
 using Plantt.Domain.Interfaces.Services.EntityServices;
+using Plantt.Domain.QueryParams;
 
 namespace Plantt.API.Controllers
 {
@@ -12,7 +12,6 @@ namespace Plantt.API.Controllers
     [Route("api/v{version:apiVersion}/")]
     public class PlantController : ControllerBase
     {
-        private readonly int[] _pageSizes = { 10, 20, 50, 100 };
         private readonly IPlantService _plantService;
         private readonly IMapper _mapper;
 
@@ -23,41 +22,12 @@ namespace Plantt.API.Controllers
         }
 
         [HttpGet("plants/{page}")]
-        public async Task<IActionResult> GetAllPlants([FromRoute] int page, [FromQuery] int pagesize = 20, [FromQuery] bool detailed = false)
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PlantDTO))]
+        public async Task<IActionResult> GetAllPlants([FromRoute] int page, [FromQuery] PlantQueryParams query)
         {
-            if (page <= 0)
-            {
-                return BadRequest(new ProblemDetails()
-                {
-                    Title = "Invalid value",
-                    Detail = "Page can't be below 1",
-                    Status = StatusCodes.Status400BadRequest
-                });
-            }
+            IEnumerable<PlantEntity>? plants = await _plantService.GetPlantPageAsync(query.PageSize, page, query.Search);
 
-            if (!_pageSizes.Contains(pagesize))
-            {
-                return BadRequest(new ProblemDetails()
-                {
-                    Title = "Invalid value",
-                    Detail = "Pagesize must be either 10, 20, 50 or 100",
-                    Status = StatusCodes.Status400BadRequest
-                });
-            }
-
-            IEnumerable<PlantEntity>? plants = await _plantService.GetPlantPage(pagesize, page);
-
-            if (plants is null || plants.Count() == 0)
-            {
-                return NotFound(new ProblemDetails()
-                {
-                    Title = "No Plants Found",
-                    Detail = "Was not able to find any plants on that page.",
-                    Status = StatusCodes.Status404NotFound
-                });
-            }
-
-            if (detailed is true)
+            if (query.Detailed is true)
             {
                 return Ok(_mapper.Map<IEnumerable<PlantDTO>>(plants));
             }
@@ -65,10 +35,13 @@ namespace Plantt.API.Controllers
             return Ok(_mapper.Map<IEnumerable<PlantMinimumDTO>>(plants));
         }
 
-        [HttpGet("plant/{id}")]
-        public async Task<IActionResult> GetPlantById([FromRoute] int id)
+        [HttpGet("plant/{plantId}")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PlantDTO))]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetPlantById([FromRoute] int plantId)
         {
-            if (id <= 0)
+            if (plantId <= 0)
             {
                 return BadRequest(new ProblemDetails()
                 {
@@ -78,7 +51,7 @@ namespace Plantt.API.Controllers
                 });
             }
 
-            PlantEntity? plant = await _plantService.GetPlantById(id);
+            PlantEntity? plant = await _plantService.GetPlantByIdAsync(plantId);
 
             if (plant is null)
             {

@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.Options;
 using Plantt.Domain.Config;
+using Plantt.Domain.DTOs.Account;
 using Plantt.Domain.Interfaces.Services;
-using Plantt.Domain.Models;
 using System.Security.Cryptography;
 
 namespace Plantt.Applcation.Services
@@ -15,7 +15,13 @@ namespace Plantt.Applcation.Services
             _passwordSettings = passwordSettings.Value;
         }
 
-        public Password CreatePassword(string password)
+        /// <summary>
+        /// Creates a PasswordDTO object with the hashed password, salt, and iterations based on the provided password.
+        /// </summary>
+        /// <param name="password">The password to be hashed.</param>
+        /// <returns>A PasswordDTO object containing the hashed password, salt, and iterations.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when the password parameter is null or empty.</exception>
+        public PasswordDTO CreatePassword(string password)
         {
             if (string.IsNullOrEmpty(password))
             {
@@ -26,7 +32,7 @@ namespace Plantt.Applcation.Services
             byte[] salt = GenerateSalt(_passwordSettings.SaltSize);
             byte[] hashedPassword = HashPassword(password, salt, iterations, _passwordSettings.PasswordHashSize);
 
-            return new Password()
+            return new PasswordDTO()
             {
                 HashedPassword = hashedPassword,
                 Salt = salt,
@@ -34,11 +40,17 @@ namespace Plantt.Applcation.Services
             };
         }
 
-        public bool VerifyPassword(string password, Password hashedPassword)
+        /// <summary>
+        /// Verifies if the provided password matches the hashed password stored in the PasswordDTO object.
+        /// </summary>
+        /// <param name="password">The password to be verified.</param>
+        /// <param name="hashedPassword">The PasswordDTO object containing the hashed password, salt, and iterations.</param>
+        /// <returns>True if the provided password matches the hashed password; otherwise, false.</returns>
+        public bool VerifyPassword(string password, PasswordDTO hashedPassword)
         {
             if (string.IsNullOrEmpty(password) || hashedPassword.HashedPassword is null)
             {
-                throw new ArgumentNullException("Either password or hashedPassword was null or empty");
+                return false;
             }
 
             byte[] recreatedPassword = HashPassword(password, hashedPassword.Salt, hashedPassword.Iterations, _passwordSettings.PasswordHashSize);

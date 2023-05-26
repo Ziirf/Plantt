@@ -11,6 +11,9 @@ namespace Plantt.Domain.Interfaces
         IHubRepository HubRepository { get; }
         IHomeRepository HomeRepository { get; }
         IRoomRepository RoomRepository { get; }
+        IAccountPlantRepository AccountPlantRepository { get; }
+        ISensorRepository SensorRepository { get; }
+        IPlantDataRepository PlantDataRepository { get; }
 
         void Commit();
         Task CommitAsync();

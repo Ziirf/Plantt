@@ -6,14 +6,13 @@ using Plantt.Domain.DTOs.Home;
 using Plantt.Domain.DTOs.Home.Request;
 using Plantt.Domain.Entities;
 using Plantt.Domain.Interfaces.Services.EntityServices;
-using System.Security.Claims;
 
 namespace Plantt.API.Controllers
 {
     [ApiController]
     [ApiVersion("1.0")]
     [Route("api/v{version:apiVersion}/[controller]")]
-    public class HomeController : ControllerBase
+    public class HomeController : ControllerExtention
     {
         private readonly IHomeService _homeService;
         private readonly IMapper _mapper;
@@ -24,48 +23,31 @@ namespace Plantt.API.Controllers
             _mapper = mapper;
         }
 
-        [Authorize(Policy = AuthorizePolicies.Registered)]
         [HttpGet()]
-        public async Task<IActionResult> GetAccountHomes()
+        [Authorize(Policy = AuthorizePolicyConstant.Registered)]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<HomeDTO>))]
+        public IActionResult GetAccountHomes()
         {
-            var accountSubject = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            AccountEntity account = GetAccountFromHttpContext();
 
-            if (accountSubject is null || !Guid.TryParse(accountSubject, out Guid accountGuid))
-            {
-                return BadRequest(new ProblemDetails()
-                {
-                    Title = "Invalid guid",
-                    Detail = "Guid in token is invalid.",
-                    Status = StatusCodes.Status400BadRequest
-                });
-            }
-
-            IEnumerable<HomeEntity> homeEntities = await _homeService.GetAccountHomesAsync(accountGuid);
+            IEnumerable<HomeEntity> homeEntities = _homeService.GetAccountHomes(account.Id);
 
             return Ok(_mapper.Map<IEnumerable<HomeDTO>>(homeEntities));
         }
 
-        [Authorize(Policy = AuthorizePolicies.Registered)]
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetAccountHomeById(int id)
+        [HttpGet("{homeId}")]
+        [Authorize(Policy = AuthorizePolicyConstant.Registered)]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(HomeDTO))]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetAccountHomeById([FromRoute] int homeId)
         {
-            var accountSubject = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            AccountEntity account = GetAccountFromHttpContext();
 
-            if (accountSubject is null || !Guid.TryParse(accountSubject, out Guid accountGuid))
-            {
-                return BadRequest(new ProblemDetails()
-                {
-                    Title = "Invalid guid",
-                    Detail = "Guid in token is invalid.",
-                    Status = StatusCodes.Status400BadRequest
-                });
-            }
-
-            HomeEntity? homeEntity = await _homeService.GetAccountHomeByIdAsync(accountGuid, id);
+            HomeEntity? homeEntity = await _homeService.GetAccountHomeByIdAsync(account.Id, homeId);
 
             if (homeEntity is null)
             {
-                return BadRequest(new ProblemDetails()
+                return NotFound(new ProblemDetails()
                 {
                     Title = "No home found",
                     Detail = "No home with that id was found under this account.",
@@ -76,65 +58,50 @@ namespace Plantt.API.Controllers
             return Ok(_mapper.Map<HomeDTO>(homeEntity));
         }
 
-        [Authorize(Policy = AuthorizePolicies.Registered)]
         [HttpPost()]
-        public async Task<IActionResult> CreateHome([FromBody] CreateHomeRequest request)
+        [Authorize(Policy = AuthorizePolicyConstant.Registered)]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(HomeDTO))]
+        public async Task<IActionResult> CreateHome([FromBody] UpdateHomeRequest request)
         {
-            var accountSubejct = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            AccountEntity account = GetAccountFromHttpContext();
 
-            if (accountSubejct is null || !Guid.TryParse(accountSubejct, out Guid accountGuid))
-            {
-                return BadRequest(new ProblemDetails()
-                {
-                    Title = "Invalid guid",
-                    Detail = "Guid in token is invalid.",
-                    Status = StatusCodes.Status400BadRequest
-                });
-            }
-
-            HomeEntity homeEntity = await _homeService.CreateHomeAsync(request, accountGuid);
+            HomeEntity homeEntity = await _homeService.CreateHomeAsync(request, account.Id);
 
             return Ok(_mapper.Map<HomeDTO>(homeEntity));
         }
 
-        [Authorize(Policy = AuthorizePolicies.Registered)]
-        [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateHome([FromBody] UpdateHomeRequest request, int id)
+        [HttpPut("{homeId}")]
+        [Authorize(Policy = AuthorizePolicyConstant.Registered)]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(HomeDTO))]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        public async Task<IActionResult> UpdateHome([FromRoute] int homeId, [FromBody] UpdateHomeRequest request)
         {
-            var accountSubject = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            AccountEntity account = GetAccountFromHttpContext();
 
-            if (accountSubject is null || !Guid.TryParse(accountSubject, out Guid accountGuid))
+            if (await _homeService.ValidateOwnerAsync(homeId, account.Id) is false)
             {
-                return BadRequest(new ProblemDetails()
-                {
-                    Title = "Invalid guid",
-                    Detail = "Guid in token is invalid.",
-                    Status = StatusCodes.Status400BadRequest
-                });
+                return Forbid();
             }
 
-            HomeEntity homeEntity = await _homeService.UpdateHomeAsync(request, id, accountGuid);
+            HomeEntity homeEntity = await _homeService.UpdateHomeAsync(request, homeId);
 
             return Ok(_mapper.Map<HomeDTO>(homeEntity));
         }
 
-        [Authorize(Policy = AuthorizePolicies.Registered)]
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteHome(int id)
+        [HttpDelete("{homeId}")]
+        [Authorize(Policy = AuthorizePolicyConstant.Registered)]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        public async Task<IActionResult> DeleteHome([FromRoute] int homeId)
         {
-            var accountSubject = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            AccountEntity account = GetAccountFromHttpContext();
 
-            if (accountSubject is null || !Guid.TryParse(accountSubject, out Guid accountGuid))
+            if (await _homeService.ValidateOwnerAsync(homeId, account.Id) is false)
             {
-                return BadRequest(new ProblemDetails()
-                {
-                    Title = "Invalid guid",
-                    Detail = "Guid in token is invalid.",
-                    Status = StatusCodes.Status400BadRequest
-                });
+                return Forbid();
             }
 
-            await _homeService.DeleteHomeAsync(id, accountGuid);
+            await _homeService.DeleteHomeAsync(homeId);
 
             return NoContent();
         }

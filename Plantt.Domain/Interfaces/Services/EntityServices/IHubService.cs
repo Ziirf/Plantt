@@ -1,11 +1,15 @@
-﻿using Plantt.Domain.Entities;
+﻿using Plantt.Domain.DTOs.Hub.Request;
+using Plantt.Domain.Entities;
 
 namespace Plantt.Domain.Interfaces.Services.EntityServices
 {
     public interface IHubService
     {
-        Task<IEnumerable<HubEntity>> GetHubsFromAccount(Guid accountGuid);
+        IEnumerable<HubEntity> GetHubsFromAccount(AccountEntity account);
+        Task SaveDataAsync(DataRequest data);
         Task<HubEntity> RegistreHubAsync(int homeId, string name);
-        Task<bool> VerifyHub(string identity, string secret);
+        Task<bool> VerifyHubAsync(string identity, string secret);
+        long GetEpochTime(DateTime date);
+        Task<bool> ValidateOwnerAsync(int hubId, int accountId);
     }
 }

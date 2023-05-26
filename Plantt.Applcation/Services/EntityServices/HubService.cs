@@ -1,6 +1,7 @@
-﻿using Microsoft.Extensions.Logging;
-using Microsoft.IdentityModel.Tokens;
+﻿using Microsoft.IdentityModel.Tokens;
+using Plantt.Domain.DTOs.Hub.Request;
 using Plantt.Domain.Entities;
+using Plantt.Domain.Exceptions;
 using Plantt.Domain.Interfaces;
 using Plantt.Domain.Interfaces.Services.EntityServices;
 using System.Security.Cryptography;
@@ -10,81 +11,89 @@ namespace Plantt.Applcation.Services.EntityServices
     public class HubService : IHubService
     {
         private readonly IUnitOfWork _unitOfWork;
-        private readonly ILogger<HubService> _logger;
 
-        public HubService(IUnitOfWork unitOfWork, ILogger<HubService> logger)
+        public HubService(IUnitOfWork unitOfWork)
         {
             _unitOfWork = unitOfWork;
-            _logger = logger;
+        }
+
+        public async Task SaveDataAsync(DataRequest data)
+        {
+            var sensorEntity = _unitOfWork.SensorRepository.GetById(data.SensorId);
+
+            if (sensorEntity is null)
+            {
+                throw new NoEntryFoundException("No sensor found");
+            }
+
+
+            if (sensorEntity.AccountPlantId is null)
+            {
+                throw new NoEntryFoundException("No sensor plant attached to sensor");
+            }
+
+            var plantData = new PlantDataEntity()
+            {
+                CreatedTS = DateTime.UtcNow,
+                AccountPlantId = (int)sensorEntity.AccountPlantId,
+                Humidity = data.Humidity,
+                Lux = data.Lux,
+                Moisture = data.Moisture,
+                TemperatureC = data.Temperature
+            };
+
+            await _unitOfWork.PlantDataRepository.AddAsync(plantData);
+            await _unitOfWork.CommitAsync();
         }
 
         public async Task<HubEntity> RegistreHubAsync(int homeId, string name)
         {
-            try
+            var identity = GenerateRandomUrlEncodedString(24);
+            var secret = GenerateRandomUrlEncodedString(64);
+
+            var hub = new HubEntity()
             {
-                var identity = GenerateRandomUrlEncodedString(24);
-                var secret = GenerateRandomUrlEncodedString(64);
+                HomeId = homeId,
+                Name = name,
+                Identity = identity,
+                Secret = secret
+            };
 
-                var hub = new HubEntity()
-                {
-                    HomeId = homeId,
-                    Name = name,
-                    Identity = identity,
-                    Secret = secret
-                };
+            await _unitOfWork.HubRepository.AddAsync(hub);
+            await _unitOfWork.CommitAsync();
 
-                await _unitOfWork.HubRepository.AddAsync(hub);
-                await _unitOfWork.CommitAsync();
-
-                return hub;
-            }
-            catch (Exception exception)
-            {
-                _logger.LogError(exception, exception.Message);
-                throw;
-            }
+            return hub;
         }
 
-        public async Task<bool> VerifyHub(string identity, string secret)
+        public async Task<bool> VerifyHubAsync(string identity, string secret)
         {
-            try
-            {
-                var hubEntity = await _unitOfWork.HubRepository.GetHubByIdentityAsync(identity);
+            var hubEntity = await _unitOfWork.HubRepository.GetHubByIdentityAsync(identity);
 
-                if (hubEntity == null)
-                {
-                    return false;
-                }
-
-                return hubEntity.Secret == secret;
-            }
-            catch (Exception exception)
+            if (hubEntity is null)
             {
-                _logger.LogError(exception, exception.Message);
                 return false;
             }
+
+            return hubEntity.Secret == secret;
         }
 
-        public async Task<IEnumerable<HubEntity>> GetHubsFromAccount(Guid accountGuid)
+        public IEnumerable<HubEntity> GetHubsFromAccount(AccountEntity account)
         {
-            try
-            {
-                AccountEntity? account = await _unitOfWork.AccountRepository.GetByGuidAsync(accountGuid);
+            return _unitOfWork.HubRepository.GetHubsFromAccount(account.Id).ToArray();
+        }
 
-                if (account is null)
-                {
-                    throw new NullReferenceException("Unable to find an account with that public Id");
-                }
+        public long GetEpochTime(DateTime date)
+        {
+            DateTime epochStart = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+            TimeSpan timeSpan = date - epochStart;
 
-                IEnumerable<HubEntity> hubs = _unitOfWork.HubRepository.GetHubsFromAccount(account.Id).ToArray();
+            return (long)timeSpan.TotalSeconds;
+        }
 
-                return hubs;
-            }
-            catch (Exception exception)
-            {
-                _logger.LogError(exception, exception.Message);
-                throw;
-            }
+
+        public async Task<bool> ValidateOwnerAsync(int hubId, int accountId)
+        {
+            return await _unitOfWork.HubRepository.IsValidOwnerAsync(hubId, accountId);
         }
 
         private string GenerateRandomUrlEncodedString(int length)

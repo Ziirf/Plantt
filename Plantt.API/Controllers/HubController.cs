@@ -1,97 +1,97 @@
-﻿
-
-using AutoMapper;
+﻿using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using Plantt.API.Constants;
 using Plantt.Applcation.Services;
+using Plantt.Domain.Config;
 using Plantt.Domain.DTOs.Hub;
 using Plantt.Domain.DTOs.Hub.Request;
 using Plantt.Domain.DTOs.Hub.Response;
 using Plantt.Domain.Entities;
 using Plantt.Domain.Interfaces.Services.EntityServices;
-using System.Security.Claims;
 
 namespace Plantt.API.Controllers
 {
     [ApiController]
     [ApiVersion("1.0")]
     [Route("api/v{version:apiVersion}/[controller]")]
-    public class HubController : ControllerBase
+    public class HubController : ControllerExtention
     {
         private readonly IHubService _hubService;
-        private readonly ILogger<HubController> _logger;
+        private readonly HubSettings _hubSettings;
         private readonly IMapper _mapper;
         private readonly ITokenAuthenticationService _tokenService;
-        private readonly IAccountService _accountService;
 
         public HubController(
             IHubService hubService,
-            ILogger<HubController> logger,
+            IOptions<HubSettings> hubSettings,
             IMapper mapper,
-            ITokenAuthenticationService tokenService,
-            IAccountService accountService)
+            ITokenAuthenticationService tokenService)
         {
             _hubService = hubService;
-            _logger = logger;
+            _hubSettings = hubSettings.Value;
             _mapper = mapper;
             _tokenService = tokenService;
-            _accountService = accountService;
         }
 
-        [HttpPost("ping")]
-        public IActionResult Ping([FromRoute] int id, [FromBody] object requestBody)
+        // TODO: DELETE, used for testing.
+        [HttpPost("ping2")]
+        [Authorize(Policy = AuthorizePolicyConstant.Hub)]
+        public IActionResult Ping2([FromBody] object requestBody)
         {
-            _logger.LogInformation("The body is {body}", requestBody.ToString());
             return Ok(requestBody);
         }
 
-        [Authorize(Policy = AuthorizePolicies.Premium)]
-        [HttpPost("Register")]
-        public async Task<IActionResult> RegisterHub([FromBody] CreateHubRequest request)
+        [HttpPost("Data")]
+        [Authorize(Policy = AuthorizePolicyConstant.Hub)]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        public async Task<IActionResult> PostData([FromBody] DataRequest requestBody)
         {
-            // TODO: Check that account is owner of that home, from the User property.
-            // TODO: DELETE LOG
-            _logger.LogInformation("The body is {body}", request.ToString());
+            await _hubService.SaveDataAsync(requestBody);
 
-            var hubEntity = await _hubService.RegistreHubAsync(request.HomeId, request.Name);
+            return NoContent();
+        }
 
-            var response = _mapper.Map<CreateHubResponse>(hubEntity);
+
+        [HttpPost("Register")]
+        [Authorize(Policy = AuthorizePolicyConstant.Premium)]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(CreateHubResponse))]
+        public async Task<IActionResult> RegisterHub([FromBody] RegisterHubRequest request)
+        {
+            HubEntity hubEntity = await _hubService.RegistreHubAsync(request.HomeId, request.Name);
+
+            CreateHubResponse response = _mapper.Map<CreateHubResponse>(hubEntity);
 
             return Ok(response);
         }
 
-        [Authorize(Policy = AuthorizePolicies.Premium)]
         [HttpGet()]
-        public async Task<IActionResult> GetHubs([FromQuery] bool includeSecret = false)
+        [Authorize(Policy = AuthorizePolicyConstant.Premium)]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(HubDTO))]
+        public IActionResult GetHubs([FromQuery] bool includeSecret = false)
         {
-            var accountSubject = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            AccountEntity account = GetAccountFromHttpContext();
 
-            if (accountSubject is null || !Guid.TryParse(accountSubject, out Guid accountGuid))
+            IEnumerable<HubEntity> hubEntities = _hubService.GetHubsFromAccount(account);
+
+            if (includeSecret is false)
             {
-                return BadRequest(new ProblemDetails()
+                foreach (var hubEntity in hubEntities)
                 {
-                    Title = "Invalid guid",
-                    Detail = "Guid in token is invalid.",
-                    Status = StatusCodes.Status400BadRequest
-                });
-            }
-
-            IEnumerable<HubEntity> hubEntities = await _hubService.GetHubsFromAccount(accountGuid);
-
-            if (includeSecret)
-            {
-                return Ok(_mapper.Map<IEnumerable<HubWithSecretDTO>>(hubEntities));
+                    hubEntity.Secret = string.Empty;
+                }
             }
 
             return Ok(_mapper.Map<IEnumerable<HubDTO>>(hubEntities));
         }
 
         [HttpPost("Login")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(LoginHubResponse))]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> LoginWithHub([FromBody] LoginHubRequest request)
         {
-            _logger.LogInformation("The body is {body}", request.ToString());
-            bool loginVerified = await _hubService.VerifyHub(request.Identity, request.Secret);
+            bool loginVerified = await _hubService.VerifyHubAsync(request.Identity, request.Secret);
 
             if (loginVerified is false)
             {
@@ -103,10 +103,19 @@ namespace Plantt.API.Controllers
                 });
             }
 
-            TimeSpan expiresIn = TimeSpan.FromMinutes(1);
-            var accessToken = _tokenService.GenerateAccessToken(request.Identity, expiresIn, "Token");
+            TimeSpan expiresIn = _hubSettings.TokenTimeToLive.Time;
 
-            return Ok(new LoginHubResponse() { ExpireTs = DateTime.UtcNow + expiresIn, accessToken = accessToken });
+            string accessToken = _tokenService.GenerateAccessToken(request.Identity, expiresIn, "Hub");
+
+            long epochTime = _hubService.GetEpochTime(DateTime.UtcNow + expiresIn);
+
+            var response = new LoginHubResponse()
+            {
+                Expire = epochTime,
+                AccessToken = accessToken
+            };
+
+            return Ok(response);
         }
     }
 }

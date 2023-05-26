@@ -4,6 +4,6 @@ namespace Plantt.Domain.Interfaces.Repository
 {
     public interface IPlantRepository : IRepository<PlantEntity>
     {
-        Task<IEnumerable<PlantEntity>> GetPlantPageAsync(int amount, int page);
+        Task<IEnumerable<PlantEntity>> GetPlantPageAsync(int amount, int page, string? search = null);
     }
 }

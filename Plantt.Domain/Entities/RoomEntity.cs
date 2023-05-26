@@ -8,9 +8,13 @@ namespace Plantt.Domain.Entities
     {
         public int Id { get; set; }
         public required string Name { get; set; }
+        public required int SunlightLevel { get; set; }
+        public required bool IsOutside { get; set; }
+
         [ForeignKey(nameof(Home))]
         [Column("FK_Home_Id")]
-        public int HomeId { get; set; }
-        public required HomeEntity Home { get; set; }
+        public required int HomeId { get; set; }
+        public HomeEntity? Home { get; set; }
+        public ICollection<AccountPlantEntity> Plants { get; set; } = new List<AccountPlantEntity>();
     }
 }

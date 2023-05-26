@@ -14,13 +14,13 @@ namespace Plantt.API.Validators.Account
 
             RuleFor(account => account.Username)
                 .NotEmpty()
-                .WithMessage("Username can't be empty.")
+                .WithMessage("{PropertyName} can't be empty.")
                 .Must(_unitOfWork.AccountRepository.DoesUsernameExist)
-                .WithMessage("No account with that username exists."); ;
+                .WithMessage("No account with that username exists.");
 
             RuleFor(account => account.Password)
                 .NotEmpty()
-                .WithMessage("Password can't be empty");
+                .WithMessage("{PropertyName} can't be empty");
         }
     }
 }

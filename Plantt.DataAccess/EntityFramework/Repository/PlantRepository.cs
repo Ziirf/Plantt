@@ -17,17 +17,26 @@ namespace Plantt.DataAccess.EntityFramework.Repository
         {
             return await _context.Plants
                 .Include(plant => plant.PlantWatering)
+                .OrderBy(plant => plant.Id)
                 .FirstOrDefaultAsync(plant => plant.Id == id);
         }
 
-        public async Task<IEnumerable<PlantEntity>> GetPlantPageAsync(int amount, int page)
+        public async Task<IEnumerable<PlantEntity>> GetPlantPageAsync(int amount, int page, string? search = null)
         {
-            return await _context.Plants
+            var query = _context.Plants
                 .Include(plant => plant.PlantWatering)
                 .OrderBy(plant => plant.Id)
                 .Skip(amount * (page - 1))
-                .Take(amount).AsNoTracking()
-                .ToListAsync();
+                .Take(amount)
+                .AsNoTracking();
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                query = query.Where(plant =>
+                    plant.LatinName.Contains(search) || (plant.CommonName != null && plant.CommonName.Contains(search)));
+            }
+
+            return await query.ToListAsync();
         }
     }
 }

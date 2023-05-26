@@ -4,7 +4,7 @@ using Plantt.Domain.Interfaces.Repository;
 
 namespace Plantt.DataAccess.EntityFramework.Repository
 {
-    public class AccountRepository : GenericRepository<AccountEntity>, IAccountRepository
+    internal class AccountRepository : GenericRepository<AccountEntity>, IAccountRepository
     {
         private readonly PlanttDBContext _context;
 

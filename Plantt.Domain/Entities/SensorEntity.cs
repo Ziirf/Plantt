@@ -4,14 +4,14 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace Plantt.Domain.Entities
 {
     [Table("Sensor")]
-    internal class SensorEntity : IEntity
+    public class SensorEntity : IEntity
     {
         public int Id { get; set; }
         public required string Name { get; set; }
 
         [ForeignKey(nameof(AccountPlant))]
         [Column("FK_AccountPlant_Id")]
-        public required int AccountPlantId { get; set; }
+        public int? AccountPlantId { get; set; }
         public AccountPlantEntity? AccountPlant { get; set; }
 
         [ForeignKey(nameof(Hub))]

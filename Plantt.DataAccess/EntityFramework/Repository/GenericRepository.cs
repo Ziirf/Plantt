@@ -41,6 +41,7 @@ namespace Plantt.DataAccess.EntityFramework.Repository
         public virtual void Delete(int id)
         {
             TEntity? entity = GetById(id);
+
             if (entity is not null)
             {
                 Delete(entity);
@@ -59,11 +60,6 @@ namespace Plantt.DataAccess.EntityFramework.Repository
         public virtual async Task AddAsync(TEntity entity)
         {
             await _context.Set<TEntity>().AddAsync(entity);
-        }
-
-        public virtual IEnumerable<TEntity> Where(Func<TEntity, bool> predicate)
-        {
-            return _context.Set<TEntity>().Where(predicate);
         }
     }
 }

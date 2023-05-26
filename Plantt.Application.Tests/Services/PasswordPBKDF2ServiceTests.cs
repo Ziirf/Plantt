@@ -2,7 +2,7 @@
 using Moq;
 using Plantt.Applcation.Services;
 using Plantt.Domain.Config;
-using Plantt.Domain.Models;
+using Plantt.Domain.DTOs.Account;
 
 namespace Plantt.Application.Tests.Services
 {
@@ -94,10 +94,10 @@ namespace Plantt.Application.Tests.Services
         [InlineData("password", null)]
         [InlineData(null, new byte[] { 1, 2, 3 })]
         [InlineData("", new byte[] { 1, 2, 3 })]
-        public void VerifyPassword_Throws_ArgumentNullException_If_Password_Or_HashedPassword_Is_Null_Or_Empty(string password, byte[] hashedPassword)
+        public void VerifyPassword_Returns_False_If_Password_Or_HashedPassword_Is_Null_Or_Empty(string password, byte[] hashedPassword)
         {
             // Arrange
-            var passwordObject = new Password()
+            var passwordObject = new PasswordDTO()
             {
                 HashedPassword = hashedPassword,
                 Salt = new byte[] { 10, 20, 30 },
@@ -105,10 +105,10 @@ namespace Plantt.Application.Tests.Services
             };
 
             // Act
-            Action act = () => subject.VerifyPassword(password, passwordObject);
+            var result = subject.VerifyPassword(password, passwordObject);
 
             // Assert
-            Assert.Throws<ArgumentNullException>(act);
+            Assert.False(result);
         }
     }
 }

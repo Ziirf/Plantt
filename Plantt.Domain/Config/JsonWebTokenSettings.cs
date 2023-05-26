@@ -6,7 +6,7 @@ namespace Plantt.Domain.Config
     {
         public string SecretKey { get; init; } = string.Empty;
         public string Issuer { get; init; } = string.Empty;
-        public int MinutesToLive { get; set; }
+        public TimeToLiveSettings TimeToLive { get; set; } = default!;
         public byte[] SecretKeyBytes => Encoding.ASCII.GetBytes(SecretKey);
     }
 }
