@@ -18,6 +18,11 @@ namespace Plantt.Applcation.Services.EntityServices
             _mapper = mapper;
         }
 
+        public IEnumerable<SensorEntity> GetAllFromAccount(int accountId)
+        {
+            return _unitOfWork.SensorRepository.GetAllFromAccount(accountId);
+        }
+
         public IEnumerable<SensorEntity> GetHubsSensors(int hubId)
         {
             return _unitOfWork.SensorRepository.GetAllFromHub(hubId);

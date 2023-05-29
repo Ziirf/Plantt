@@ -17,14 +17,14 @@ namespace Plantt.Applcation.Services.EntityServices
             _mapper = mapper;
         }
 
+        public async Task<RoomEntity?> GetRoomByIdAsync(int roomId)
+        {
+            return await _unitOfWork.RoomRepository.GetByIdAsync(roomId);
+        }
+
         public IEnumerable<RoomEntity> GetAccountsRooms(int accountId)
         {
             return _unitOfWork.RoomRepository.GetAllRooms(accountId);
-        }
-
-        public async Task<RoomEntity?> GetRoomByIdAsync(int roomId)
-        {
-            return await _unitOfWork.RoomRepository.GetRoomByIdAsync(roomId);
         }
 
         public async Task<RoomEntity> CreateRoomAsync(UpdateRoomRequest roomRequest)

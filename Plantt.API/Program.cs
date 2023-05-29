@@ -25,13 +25,13 @@ namespace Plantt.API
             // These services can be found in DependencyInjection.cs
             services
                 .AddJsonWebTokenAuthentication(config)
-                .AddPlanttAuthorization()
-                .AddEntityServices()
-                .AddMiddleware()
                 .AddInfrastructure(config)
+                .AddPlanttAuthorization()
                 .AddValidator()
-                .AddSwagger()
                 .AddVersioning()
+                .AddPlanttServices()
+                .AddPlanttMiddleware()
+                .AddSwagger()
                 .AddMapper();
 
             // Logging setup
@@ -50,14 +50,13 @@ namespace Plantt.API
 
             // This is commented out as there were some problems getting certificates to work correctly -
             // on the android app and microcontroller, worked fine on postman though.
-
             //app.UseHttpsRedirection();
 
             app.UseAuthentication();
 
             app.UseAuthorization();
 
-            app.UseMiddleware<AccountFromTokenMiddleware>();
+            app.UseMiddleware<TokenHandlingMiddleware>();
 
             app.UseMiddleware<GlobalExceptionHandlingMiddleware>();
 

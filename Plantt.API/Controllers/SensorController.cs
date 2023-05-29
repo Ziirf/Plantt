@@ -25,6 +25,19 @@ namespace Plantt.API.Controllers
             _mapper = mapper;
         }
 
+        [HttpGet()]
+        [Authorize(Policy = AuthorizePolicyConstant.Premium)]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<SensorDTO>))]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        public async Task<IActionResult> GetAllSensors()
+        {
+            AccountEntity account = GetAccountFromHttpContext();
+
+            var sensorEntities = _sensorService.GetAllFromAccount(account.Id);
+
+            return Ok(_mapper.Map<IEnumerable<SensorDTO>>(sensorEntities));
+        }
+
         [HttpGet("Hub/{hubId}")]
         [Authorize(Policy = AuthorizePolicyConstant.Premium)]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<SensorDTO>))]

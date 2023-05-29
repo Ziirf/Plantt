@@ -27,6 +27,8 @@ namespace Plantt.Applcation.Services.EntityServices
 
         public async Task<AccountEntity?> GetAccountByIdAsync(int id)
         {
+            throw new NotImplementedException();
+
             return await _unitOfWork.AccountRepository.GetByIdAsync(id);
         }
 
@@ -35,7 +37,7 @@ namespace Plantt.Applcation.Services.EntityServices
             return await _unitOfWork.AccountRepository.GetByUsernameAsync(username);
         }
 
-        public async Task<AccountEntity> CreateNewAccountAsync(CreateAccountRequest accountRequest)
+        public async Task<AccountEntity> CreateAccountAsync(CreateAccountRequest accountRequest)
         {
             PasswordDTO password = _passwordService.CreatePassword(accountRequest.Password);
 
@@ -54,6 +56,21 @@ namespace Plantt.Applcation.Services.EntityServices
             return newAccount;
         }
 
+        public async Task<AccountEntity?> ChangeAccountRoleAsync(AccountEntity account, AccountRoles role)
+        {
+            account.Role = role;
+            _unitOfWork.AccountRepository.Update(account);
+            await _unitOfWork.CommitAsync();
+
+            return account;
+        }
+
+        public async Task DeleteAccount(AccountEntity account)
+        {
+            _unitOfWork.AccountRepository.Delete(account);
+            await _unitOfWork.CommitAsync();
+        }
+
         public bool VerifyPassword(AccountEntity account, string password)
         {
             PasswordDTO storedPassword = _mapper.Map<PasswordDTO>(account);
@@ -64,15 +81,6 @@ namespace Plantt.Applcation.Services.EntityServices
             }
 
             return false;
-        }
-
-        public async Task<AccountEntity?> ChangeAccountRoleAsync(AccountEntity account, AccountRoles role)
-        {
-            account.Role = role;
-            _unitOfWork.AccountRepository.Update(account);
-            await _unitOfWork.CommitAsync();
-
-            return account;
         }
     }
 }

@@ -8,6 +8,7 @@ using Plantt.Domain.Config;
 using Plantt.Domain.DTOs.Hub;
 using Plantt.Domain.DTOs.Hub.Request;
 using Plantt.Domain.DTOs.Hub.Response;
+using Plantt.Domain.DTOs.PlantData.Request;
 using Plantt.Domain.Entities;
 using Plantt.Domain.Interfaces.Services.EntityServices;
 
@@ -35,24 +36,43 @@ namespace Plantt.API.Controllers
             _tokenService = tokenService;
         }
 
-        // TODO: DELETE, used for testing.
-        [HttpPost("ping2")]
-        [Authorize(Policy = AuthorizePolicyConstant.Hub)]
-        public IActionResult Ping2([FromBody] object requestBody)
-        {
-            return Ok(requestBody);
-        }
-
         [HttpPost("Data")]
         [Authorize(Policy = AuthorizePolicyConstant.Hub)]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
-        public async Task<IActionResult> PostData([FromBody] DataRequest requestBody)
+        public async Task<IActionResult> PostData([FromBody] SendDataRequest requestBody)
         {
+            HubEntity hub = GetHubFromHttpContext();
+
+            if (_hubService.IsSensorChildOfHub(hub.Id, requestBody.SensorId) is false)
+            {
+                // Trying to send data to a hub that doesn't belong to the sensor.
+                return Forbid();
+            }
+
             await _hubService.SaveDataAsync(requestBody);
 
             return NoContent();
         }
 
+        [HttpPost("BulkData")]
+        [Authorize(Policy = AuthorizePolicyConstant.Hub)]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        public async Task<IActionResult> PostBulkData([FromBody] IEnumerable<SendDataRequest> requestBody)
+        {
+            HubEntity hub = GetHubFromHttpContext();
+
+            var sensorIds = requestBody.Select(req => req.SensorId).ToArray();
+
+            if (_hubService.IsSensorChildOfHub(hub.Id, sensorIds) is false)
+            {
+                // Trying to send data to a hub that doesn't belong to the sensor.
+                return Forbid();
+            }
+
+            await _hubService.SaveDataAsync(requestBody);
+
+            return NoContent();
+        }
 
         [HttpPost("Register")]
         [Authorize(Policy = AuthorizePolicyConstant.Premium)]

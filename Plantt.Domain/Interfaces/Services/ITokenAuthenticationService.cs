@@ -10,7 +10,7 @@ namespace Plantt.Applcation.Services
         /// Generates an access token with the specified subject and role using the default time.
         /// </summary>
         /// <param name="subject">The subject associated with the access token.</param>
-        /// <param name="role">The role associated with the access token.</param>
+        /// <param name="role">The role associated with the access token. Default value is <see cref="AccountRoles.Registred"/>.</param>
         /// <returns>A string representation of the generated access token.</returns>
         string GenerateAccessToken(string subject, AccountRoles role = AccountRoles.Registred);
 
@@ -33,23 +33,24 @@ namespace Plantt.Applcation.Services
         string GenerateAccessToken(string subject, TimeSpan expireIn, string role);
 
         /// <summary>
-        /// Generates a refresh token asynchronously for the specified token family.
+        /// Generates a refresh token asynchronously for the specified account.
         /// </summary>
         /// <param name="account">The account associated with the refresh token.</param>
-        /// <returns>The generated RefreshTokenEntity as a task.</returns>
+        /// <returns>The generated <see cref="RefreshTokenEntity"/> as a task.</returns>
         Task<RefreshTokenEntity> GenerateRefreshTokenAsync(AccountEntity account);
+
         /// <summary>
         /// Generates a refresh token asynchronously for the specified token family.
         /// </summary>
         /// <param name="tokenFamily">The token family associated with the refresh token.</param>
-        /// <returns>The generated RefreshTokenEntity as a task.</returns>
+        /// <returns>The generated <see cref="RefreshTokenEntity"/> as a task.</returns>
         Task<RefreshTokenEntity> GenerateRefreshTokenAsync(TokenFamilyEntity tokenFamily);
 
         /// <summary>
-        /// Generates a refresh token asynchronously for the specified account.
+        /// Retrieves the refresh token asynchronously for the specified refresh token string.
         /// </summary>
-        /// <param name="account">The account associated with the refresh token.</param>
-        /// <returns>The generated RefreshTokenEntity as a task.</returns>
+        /// <param name="refreshToken">The refresh token string.</param>
+        /// <returns>The retrieved <see cref="RefreshTokenEntity"/> as a task. Returns null if the refresh token is not found.</returns>
         Task<RefreshTokenEntity?> GetRefreshTokenAsync(string refreshToken);
 
         /// <summary>
@@ -72,7 +73,8 @@ namespace Plantt.Applcation.Services
         /// </summary>
         /// <param name="refreshToken">The refresh token to validate.</param>
         /// <returns>
-        ///     A bool that represent if the Refresh token is valid(true) or not(false), as a task.
+        ///     A task that represents the asynchronous operation. The task result contains a bool indicating 
+        ///     if the refresh token is valid (true) or not (false).
         /// </returns>
         Task<bool> ValidateRefreshTokenAsync(RefreshTokenEntity refreshToken);
     }

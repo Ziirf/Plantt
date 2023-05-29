@@ -22,9 +22,8 @@ namespace Plantt.API.Configurations
 {
     public static class DependencyInjection
     {
-        public static IServiceCollection AddEntityServices(this IServiceCollection services)
+        public static IServiceCollection AddPlanttServices(this IServiceCollection services)
         {
-            // Services
             services.AddTransient<IPasswordService, PasswordPBKDF2Service>();
             services.AddTransient<ITokenAuthenticationService, TokenAuthenticationService>();
             services.AddTransient<IAccountService, AccountService>();
@@ -38,10 +37,10 @@ namespace Plantt.API.Configurations
             return services;
         }
 
-        public static IServiceCollection AddMiddleware(this IServiceCollection services)
+        public static IServiceCollection AddPlanttMiddleware(this IServiceCollection services)
         {
             services.AddTransient<GlobalExceptionHandlingMiddleware>();
-            services.AddTransient<AccountFromTokenMiddleware>();
+            services.AddTransient<TokenHandlingMiddleware>();
 
             return services;
         }
@@ -142,7 +141,6 @@ namespace Plantt.API.Configurations
             {
                 options.UseSqlServer(config["ConnectionStrings:Plantt"]);
             });
-
             services.AddScoped<IUnitOfWork, UnitOfWork>();
 
             return services;

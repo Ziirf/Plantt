@@ -9,10 +9,12 @@ namespace Plantt.Domain.Entities
         public int Id { get; set; }
         public required string Name { get; set; }
         public required string Identity { get; set; }
+        [Column(TypeName = "nvarchar(64)")]
         public required string Secret { get; set; }
         [ForeignKey(nameof(Home))]
         [Column("FK_Home_Id")]
         public required int HomeId { get; set; }
         public HomeEntity? Home { get; set; }
+        public ICollection<SensorEntity> Sensors { get; set; } = new List<SensorEntity>();
     }
 }

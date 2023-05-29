@@ -7,6 +7,7 @@ namespace Plantt.Domain.Entities
     public class RefreshTokenEntity : IEntity
     {
         public int Id { get; set; }
+        [Column(TypeName = "nvarchar(50)")]
         public required string Token { get; set; }
         public required bool Used { get; set; }
         public required DateTime IssuedTS { get; set; }

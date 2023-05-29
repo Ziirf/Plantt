@@ -21,12 +21,12 @@ namespace Plantt.DataAccess.EntityFramework.Repository
                 .AsNoTracking();
         }
 
-        public async Task<HomeEntity?> GetAccountHomeByIdAsync(int accountId, int homeId)
+        public override async Task<HomeEntity?> GetByIdAsync(int id)
         {
             return await _context.Homes
                 .Include(home => home.Rooms)
                 .OrderBy(home => home.Id)
-                .FirstOrDefaultAsync(home => home.AccountId == accountId && home.Id == homeId);
+                .FirstOrDefaultAsync(home => home.Id == id);
         }
 
         public bool IsValidOwner(int homeId, int accountId)

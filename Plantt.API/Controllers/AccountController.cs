@@ -38,7 +38,7 @@ namespace Plantt.API.Controllers
         {
             // Create account
 
-            AccountEntity account = await _accountService.CreateNewAccountAsync(request);
+            AccountEntity account = await _accountService.CreateAccountAsync(request);
 
             // Generate access token and refresh token for credentials
 
@@ -128,6 +128,20 @@ namespace Plantt.API.Controllers
             await _accountService.ChangeAccountRoleAsync(account, role);
 
             return Ok(_mapper.Map<AccountDTO>(account));
+        }
+
+        [HttpDelete()]
+        [Authorize(Policy = AuthorizePolicyConstant.Registered)]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        public async Task<IActionResult> DeleteAccount([FromRoute] AccountRoles role)
+        {
+            // Get account, Delete it, and return 204 statuscode.
+
+            AccountEntity account = GetAccountFromHttpContext();
+
+            await _accountService.DeleteAccount(account);
+
+            return NoContent();
         }
 
         [HttpGet("Refresh/{token}")]

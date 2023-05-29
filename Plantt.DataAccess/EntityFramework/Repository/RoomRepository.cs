@@ -24,7 +24,7 @@ namespace Plantt.DataAccess.EntityFramework.Repository
                 .AsNoTracking();
         }
 
-        public async Task<RoomEntity?> GetRoomByIdAsync(int roomId)
+        public override async Task<RoomEntity?> GetByIdAsync(int id)
         {
             return await _context.Rooms
                 .Include(room => room.Plants)
@@ -32,7 +32,7 @@ namespace Plantt.DataAccess.EntityFramework.Repository
                 .ThenInclude(plant => plant!.PlantWatering)
                 .Include(room => room.Home)
                 .OrderBy(room => room.Id)
-                .FirstOrDefaultAsync(room => room.Id == roomId);
+                .FirstOrDefaultAsync(room => room.Id == id);
         }
 
 

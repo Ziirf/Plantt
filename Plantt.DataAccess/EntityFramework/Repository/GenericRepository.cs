@@ -38,20 +38,6 @@ namespace Plantt.DataAccess.EntityFramework.Repository
             _context.Set<TEntity>().Remove(entity);
         }
 
-        public virtual void Delete(int id)
-        {
-            TEntity? entity = GetById(id);
-
-            if (entity is not null)
-            {
-                Delete(entity);
-            }
-            else
-            {
-                throw new NullReferenceException($"The entity with {id} was not found, and could therefore not be deleted");
-            }
-        }
-
         public virtual async Task<TEntity?> GetByIdAsync(int id)
         {
             return await _context.Set<TEntity>().FindAsync(id);
@@ -60,6 +46,11 @@ namespace Plantt.DataAccess.EntityFramework.Repository
         public virtual async Task AddAsync(TEntity entity)
         {
             await _context.Set<TEntity>().AddAsync(entity);
+        }
+
+        public virtual async Task AddRangeAsync(IEnumerable<TEntity> entities)
+        {
+            await _context.Set<TEntity>().AddRangeAsync(entities);
         }
     }
 }

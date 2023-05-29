@@ -13,6 +13,15 @@ namespace Plantt.DataAccess.EntityFramework.Repository
             _context = context;
         }
 
+        public IEnumerable<SensorEntity> GetAllFromAccount(int accountId)
+        {
+            return _context.Sensor
+                .Include(sensor => sensor.AccountPlant)
+                .ThenInclude(accountPlant => accountPlant!.Plant)
+                .Where(sensor => sensor!.Hub!.Home!.AccountId == accountId)
+                .AsNoTracking();
+        }
+
         public IEnumerable<SensorEntity> GetAllFromHub(int hubId)
         {
             return _context.Sensor

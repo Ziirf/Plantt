@@ -45,5 +45,20 @@ namespace Plantt.DataAccess.EntityFramework.Repository
 
             return result is not null;
         }
+
+        public bool IsSensorsChildOfHubAsync(int hubId, params int[] sensorIdArray)
+        {
+            var sensorIds = _context.Hubs
+                .Where(hub => hub.Id == hubId)
+                .SelectMany(hub => hub.Sensors.Select(sensor => sensor.Id))
+                .ToList();
+
+            return sensorIdArray.All(id => sensorIds.Contains(id));
+
+            /*return _context.Hubs
+                .Where(hub => hub.Id == hubId)
+                .SelectMany(hub => hub.Sensors)
+                .All(sensor => sensorIdArray.Contains(sensor.Id));*/
+        }
     }
 }

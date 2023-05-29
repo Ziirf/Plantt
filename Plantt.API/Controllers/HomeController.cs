@@ -30,7 +30,7 @@ namespace Plantt.API.Controllers
         {
             AccountEntity account = GetAccountFromHttpContext();
 
-            IEnumerable<HomeEntity> homeEntities = _homeService.GetAccountHomes(account.Id);
+            IEnumerable<HomeEntity> homeEntities = _homeService.GetAllAccountHomes(account.Id);
 
             return Ok(_mapper.Map<IEnumerable<HomeDTO>>(homeEntities));
         }
@@ -43,7 +43,12 @@ namespace Plantt.API.Controllers
         {
             AccountEntity account = GetAccountFromHttpContext();
 
-            HomeEntity? homeEntity = await _homeService.GetAccountHomeByIdAsync(account.Id, homeId);
+            if (await _homeService.ValidateOwnerAsync(homeId, account.Id) is false)
+            {
+                return Forbid();
+            }
+
+            HomeEntity? homeEntity = await _homeService.GetHomeByIdAsync(homeId);
 
             if (homeEntity is null)
             {

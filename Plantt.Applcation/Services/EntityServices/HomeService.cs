@@ -15,14 +15,14 @@ namespace Plantt.Applcation.Services.EntityServices
             _unitOfWork = unitOfWork;
         }
 
-        public IEnumerable<HomeEntity> GetAccountHomes(int accountId)
+        public async Task<HomeEntity?> GetHomeByIdAsync(int homeId)
         {
-            return _unitOfWork.HomeRepository.GetAccountHome(accountId).ToList();
+            return await _unitOfWork.HomeRepository.GetByIdAsync(homeId);
         }
 
-        public async Task<HomeEntity?> GetAccountHomeByIdAsync(int accountId, int homeId)
+        public IEnumerable<HomeEntity> GetAllAccountHomes(int accountId)
         {
-            return await _unitOfWork.HomeRepository.GetAccountHomeByIdAsync(accountId, homeId);
+            return _unitOfWork.HomeRepository.GetAccountHome(accountId);
         }
 
         public async Task<HomeEntity> CreateHomeAsync(UpdateHomeRequest request, int accountId)

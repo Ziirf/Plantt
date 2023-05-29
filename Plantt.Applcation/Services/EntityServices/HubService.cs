@@ -1,5 +1,6 @@
-﻿using Microsoft.IdentityModel.Tokens;
-using Plantt.Domain.DTOs.Hub.Request;
+﻿using Microsoft.Extensions.Logging;
+using Microsoft.IdentityModel.Tokens;
+using Plantt.Domain.DTOs.PlantData.Request;
 using Plantt.Domain.Entities;
 using Plantt.Domain.Exceptions;
 using Plantt.Domain.Interfaces;
@@ -11,13 +12,15 @@ namespace Plantt.Applcation.Services.EntityServices
     public class HubService : IHubService
     {
         private readonly IUnitOfWork _unitOfWork;
+        private readonly ILogger<HubService> _logger;
 
-        public HubService(IUnitOfWork unitOfWork)
+        public HubService(IUnitOfWork unitOfWork, ILogger<HubService> logger)
         {
             _unitOfWork = unitOfWork;
+            _logger = logger;
         }
 
-        public async Task SaveDataAsync(DataRequest data)
+        public async Task SaveDataAsync(SendDataRequest data)
         {
             var sensorEntity = _unitOfWork.SensorRepository.GetById(data.SensorId);
 
@@ -26,7 +29,6 @@ namespace Plantt.Applcation.Services.EntityServices
                 throw new NoEntryFoundException("No sensor found");
             }
 
-
             if (sensorEntity.AccountPlantId is null)
             {
                 throw new NoEntryFoundException("No sensor plant attached to sensor");
@@ -34,7 +36,7 @@ namespace Plantt.Applcation.Services.EntityServices
 
             var plantData = new PlantDataEntity()
             {
-                CreatedTS = DateTime.UtcNow,
+                CreatedTS = GetDateTimeFromEpoch(data.TimeStamp),
                 AccountPlantId = (int)sensorEntity.AccountPlantId,
                 Humidity = data.Humidity,
                 Lux = data.Lux,
@@ -43,6 +45,43 @@ namespace Plantt.Applcation.Services.EntityServices
             };
 
             await _unitOfWork.PlantDataRepository.AddAsync(plantData);
+            await _unitOfWork.CommitAsync();
+        }
+
+        public async Task SaveDataAsync(IEnumerable<SendDataRequest> data)
+        {
+            var dataPoints = new List<PlantDataEntity>();
+
+            foreach (var dataItem in data)
+            {
+                var sensorEntity = _unitOfWork.SensorRepository.GetById(dataItem.SensorId);
+
+                if (sensorEntity is null)
+                {
+                    throw new NoEntryFoundException($"No sensor with id {dataItem.SensorId} found");
+                }
+
+                if (sensorEntity.AccountPlantId is null)
+                {
+                    throw new NoEntryFoundException($"No plant attached to sensor with id {dataItem.SensorId}");
+                }
+
+                var entry = new PlantDataEntity()
+                {
+                    CreatedTS = GetDateTimeFromEpoch(dataItem.TimeStamp),
+                    AccountPlantId = (int)sensorEntity.AccountPlantId,
+                    Humidity = dataItem.Humidity,
+                    Lux = dataItem.Lux,
+                    Moisture = dataItem.Moisture,
+                    TemperatureC = dataItem.Temperature
+                };
+
+                dataPoints.Add(entry);
+
+                _logger.LogInformation("The CreatedTS looks like this: {CreatedTS}", entry.CreatedTS);
+            }
+
+            await _unitOfWork.PlantDataRepository.AddRangeAsync(dataPoints);
             await _unitOfWork.CommitAsync();
         }
 
@@ -65,6 +104,11 @@ namespace Plantt.Applcation.Services.EntityServices
             return hub;
         }
 
+        public IEnumerable<HubEntity> GetHubsFromAccount(AccountEntity account)
+        {
+            return _unitOfWork.HubRepository.GetHubsFromAccount(account.Id).ToArray();
+        }
+
         public async Task<bool> VerifyHubAsync(string identity, string secret)
         {
             var hubEntity = await _unitOfWork.HubRepository.GetHubByIdentityAsync(identity);
@@ -77,11 +121,6 @@ namespace Plantt.Applcation.Services.EntityServices
             return hubEntity.Secret == secret;
         }
 
-        public IEnumerable<HubEntity> GetHubsFromAccount(AccountEntity account)
-        {
-            return _unitOfWork.HubRepository.GetHubsFromAccount(account.Id).ToArray();
-        }
-
         public long GetEpochTime(DateTime date)
         {
             DateTime epochStart = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
@@ -90,10 +129,23 @@ namespace Plantt.Applcation.Services.EntityServices
             return (long)timeSpan.TotalSeconds;
         }
 
-
         public async Task<bool> ValidateOwnerAsync(int hubId, int accountId)
         {
             return await _unitOfWork.HubRepository.IsValidOwnerAsync(hubId, accountId);
+        }
+
+        public bool IsSensorChildOfHub(int hubId, params int[] sensorId)
+        {
+            return _unitOfWork.HubRepository.IsSensorsChildOfHubAsync(hubId, sensorId);
+        }
+
+
+        private DateTime GetDateTimeFromEpoch(long epochTime)
+        {
+            DateTime epochStart = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+            DateTime date = epochStart.AddSeconds(epochTime);
+
+            return date;
         }
 
         private string GenerateRandomUrlEncodedString(int length)
