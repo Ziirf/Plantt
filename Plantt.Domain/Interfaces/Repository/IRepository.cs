@@ -54,5 +54,6 @@
         /// <param name="entity">The entity to be added</param>
         /// <returns>Returns the async task.</returns>
         Task AddRangeAsync(IEnumerable<TEntity> entities);
+        void Delete(IEnumerable<TEntity> entities);
     }
 }

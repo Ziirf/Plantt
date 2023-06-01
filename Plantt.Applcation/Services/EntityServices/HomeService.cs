@@ -22,7 +22,7 @@ namespace Plantt.Applcation.Services.EntityServices
 
         public IEnumerable<HomeEntity> GetAllAccountHomes(int accountId)
         {
-            return _unitOfWork.HomeRepository.GetAccountHome(accountId);
+            return _unitOfWork.HomeRepository.GetAccountHomes(accountId);
         }
 
         public async Task<HomeEntity> CreateHomeAsync(UpdateHomeRequest request, int accountId)

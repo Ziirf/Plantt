@@ -54,11 +54,6 @@ namespace Plantt.DataAccess.EntityFramework.Repository
                 .ToList();
 
             return sensorIdArray.All(id => sensorIds.Contains(id));
-
-            /*return _context.Hubs
-                .Where(hub => hub.Id == hubId)
-                .SelectMany(hub => hub.Sensors)
-                .All(sensor => sensorIdArray.Contains(sensor.Id));*/
         }
     }
 }

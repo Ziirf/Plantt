@@ -35,7 +35,14 @@ namespace Plantt.DataAccess.EntityFramework.Repository
 
         public virtual void Delete(TEntity entity)
         {
+            _context.Attach(entity);
             _context.Set<TEntity>().Remove(entity);
+        }
+
+        public virtual void Delete(IEnumerable<TEntity> entities)
+        {
+            _context.AttachRange(entities); 
+            _context.Set<TEntity>().RemoveRange(entities);
         }
 
         public virtual async Task<TEntity?> GetByIdAsync(int id)

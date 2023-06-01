@@ -9,7 +9,7 @@ namespace Plantt.Applcation.Automapper
         public PlantDataProfile()
         {
             CreateMap<PlantDataEntity, PlantDataDTO>()
-                .ForMember(dest => dest.TimeStamp, opt => opt.MapFrom(src => src.CreatedTS));
+                .ForMember(dest => dest.TimeStamp,opt => opt.MapFrom(src => src.CreatedTS));
         }
     }
 }

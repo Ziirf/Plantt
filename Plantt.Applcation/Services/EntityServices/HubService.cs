@@ -139,7 +139,6 @@ namespace Plantt.Applcation.Services.EntityServices
             return _unitOfWork.HubRepository.IsSensorsChildOfHubAsync(hubId, sensorId);
         }
 
-
         private DateTime GetDateTimeFromEpoch(long epochTime)
         {
             DateTime epochStart = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
@@ -159,6 +158,22 @@ namespace Plantt.Applcation.Services.EntityServices
             string randomString = Base64UrlEncoder.Encode(bytes);
 
             return randomString.Substring(0, length);
+        }
+
+        private bool IsDataCorrupt(SendDataRequest request)
+        {
+            if (request is null)
+            {
+                return true;
+            }
+
+            if (request.Moisture <= 0 && request.Lux <= 0 && request.Humidity <= 0)
+            {
+                return true;
+            }
+
+
+            return false;
         }
     }
 }

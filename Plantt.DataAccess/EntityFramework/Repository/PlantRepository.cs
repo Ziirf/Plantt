@@ -23,20 +23,24 @@ namespace Plantt.DataAccess.EntityFramework.Repository
 
         public async Task<IEnumerable<PlantEntity>> GetPlantPageAsync(int amount, int page, string? search = null)
         {
-            var query = _context.Plants
-                .Include(plant => plant.PlantWatering)
-                .OrderBy(plant => plant.Id)
-                .Skip(amount * (page - 1))
-                .Take(amount)
-                .AsNoTracking();
+            var query = _context.Plants.AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(search))
             {
                 query = query.Where(plant =>
-                    plant.LatinName.Contains(search) || (plant.CommonName != null && plant.CommonName.Contains(search)));
+                    plant.LatinName.Contains(search) ||
+                    (plant.CommonName != null && plant.CommonName.Contains(search) ||
+                    plant.Category.Contains(search) ||
+                    plant.Origin.Contains(search)));
             }
 
-            return await query.ToListAsync();
+            return await query
+                .OrderBy(plant => plant.Id)
+                .Include(plant => plant.PlantWatering)
+                .Skip(amount * (page - 1))
+                .Take(amount)
+                .AsNoTracking()
+                .ToListAsync();
         }
     }
 }

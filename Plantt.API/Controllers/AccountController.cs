@@ -178,10 +178,6 @@ namespace Plantt.API.Controllers
                 });
             }
 
-            // Mark the token as used, in case of reuse, this would compromise the security of the account.
-
-            await _tokenService.MarkRefreshTokenAsUsedAsync(refreshToken);
-
             AccountEntity? account = await _accountService.GetAccountByIdAsync(refreshToken.TokenFamily.AccountId);
 
             if (account is null)
@@ -195,9 +191,11 @@ namespace Plantt.API.Controllers
             }
 
             // Generating new access token, and refresh token.
-
             string accessToken = _tokenService.GenerateAccessToken(account.PublicId.ToString(), account.Role);
             RefreshTokenEntity newRefreshToken = await _tokenService.GenerateRefreshTokenAsync(refreshToken.TokenFamily);
+
+            // Mark the token as used, in case of reuse, this would compromise the security of the account.
+            await _tokenService.MarkRefreshTokenAsUsedAsync(refreshToken);
 
             var response = new TokenAuthenticationResponse()
             {

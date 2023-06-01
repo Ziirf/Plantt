@@ -9,7 +9,7 @@ namespace Plantt.Domain.Interfaces.Repository
         /// </summary>
         /// <param name="accountId">The ID of the account.</param>
         /// <returns>An enumerable collection of <see cref="HomeEntity"/> objects representing the homes associated with the account.</returns>
-        IEnumerable<HomeEntity> GetAccountHome(int accountId);
+        IEnumerable<HomeEntity> GetAccountHomes(int accountId);
 
         /// <summary>
         /// Validates if an account is the owner of a home.

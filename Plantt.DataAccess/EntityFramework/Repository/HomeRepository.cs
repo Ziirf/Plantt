@@ -13,7 +13,7 @@ namespace Plantt.DataAccess.EntityFramework.Repository
             _context = context;
         }
 
-        public IEnumerable<HomeEntity> GetAccountHome(int accountId)
+        public IEnumerable<HomeEntity> GetAccountHomes(int accountId)
         {
             return _context.Homes
                 .Where(home => home.AccountId == accountId)

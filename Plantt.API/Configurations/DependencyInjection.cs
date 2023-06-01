@@ -47,15 +47,17 @@ namespace Plantt.API.Configurations
 
         public static IServiceCollection AddJsonWebTokenAuthentication(this IServiceCollection services, IConfiguration config)
         {
+            // Gets the settings from appsetting.json
             var jwtSection = config.GetSection("JWTSettings");
             var jwtSettings = jwtSection?.Get<JsonWebTokenSettings>();
 
+            // If not found, throw an exception
             if (jwtSettings is null || jwtSection is null)
             {
                 throw new ApplicationException("JWTSettings section not found in appsettings.");
             }
 
-            // ConfigSettings
+            // Add settings
             services.Configure<JsonWebTokenSettings>(jwtSection);
 
             services.AddAuthentication(options =>
@@ -82,15 +84,18 @@ namespace Plantt.API.Configurations
 
                 options.Events = new JwtBearerEvents()
                 {
+                    // Define what should happen if authentication fails
                     OnAuthenticationFailed = context =>
                     {
                         var endpoint = context.HttpContext.GetEndpoint();
 
+                        // If no auth is required, just move on
                         if (endpoint?.Metadata.GetMetadata<AuthorizeAttribute>() is null)
                         {
                             return Task.CompletedTask;
                         }
 
+                        // If it failed due to an expired token, add that to an head as reason.
                         if (context.Exception is SecurityTokenExpiredException)
                         {
                             context.Response.Headers.Add("Authentication-Failure-Reason", "Token Expired");
@@ -100,6 +105,7 @@ namespace Plantt.API.Configurations
                             context.Response.Headers.Add("Authentication-Failure-Reason", "Invalid Token");
                         }
 
+                        // Add 401 Statuscode
                         context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
 
                         return Task.CompletedTask;

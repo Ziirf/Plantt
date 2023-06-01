@@ -27,8 +27,6 @@ namespace Plantt.Applcation.Services.EntityServices
 
         public async Task<AccountEntity?> GetAccountByIdAsync(int id)
         {
-            throw new NotImplementedException();
-
             return await _unitOfWork.AccountRepository.GetByIdAsync(id);
         }
 
@@ -67,6 +65,9 @@ namespace Plantt.Applcation.Services.EntityServices
 
         public async Task DeleteAccount(AccountEntity account)
         {
+            var homes = _unitOfWork.HomeRepository.GetAccountHomes(account.Id).ToList();
+
+            _unitOfWork.HomeRepository.Delete(homes);
             _unitOfWork.AccountRepository.Delete(account);
             await _unitOfWork.CommitAsync();
         }

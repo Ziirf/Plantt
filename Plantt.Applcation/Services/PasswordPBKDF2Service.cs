@@ -15,12 +15,6 @@ namespace Plantt.Applcation.Services
             _passwordSettings = passwordSettings.Value;
         }
 
-        /// <summary>
-        /// Creates a PasswordDTO object with the hashed password, salt, and iterations based on the provided password.
-        /// </summary>
-        /// <param name="password">The password to be hashed.</param>
-        /// <returns>A PasswordDTO object containing the hashed password, salt, and iterations.</returns>
-        /// <exception cref="ArgumentNullException">Thrown when the password parameter is null or empty.</exception>
         public PasswordDTO CreatePassword(string password)
         {
             if (string.IsNullOrEmpty(password))
@@ -28,6 +22,7 @@ namespace Plantt.Applcation.Services
                 throw new ArgumentNullException(nameof(password));
             }
 
+            // Generates the required components for the password.
             int iterations = GenerateIterationFromRange(_passwordSettings.MinIterations, _passwordSettings.MaxIterations);
             byte[] salt = GenerateSalt(_passwordSettings.SaltSize);
             byte[] hashedPassword = HashPassword(password, salt, iterations, _passwordSettings.PasswordHashSize);
@@ -40,12 +35,6 @@ namespace Plantt.Applcation.Services
             };
         }
 
-        /// <summary>
-        /// Verifies if the provided password matches the hashed password stored in the PasswordDTO object.
-        /// </summary>
-        /// <param name="password">The password to be verified.</param>
-        /// <param name="hashedPassword">The PasswordDTO object containing the hashed password, salt, and iterations.</param>
-        /// <returns>True if the provided password matches the hashed password; otherwise, false.</returns>
         public bool VerifyPassword(string password, PasswordDTO hashedPassword)
         {
             if (string.IsNullOrEmpty(password) || hashedPassword.HashedPassword is null)
@@ -55,11 +44,13 @@ namespace Plantt.Applcation.Services
 
             byte[] recreatedPassword = HashPassword(password, hashedPassword.Salt, hashedPassword.Iterations, _passwordSettings.PasswordHashSize);
 
+            // Check the two values against each other, in a way where an attacker can't read anything from the timing of it.
             return CryptographicOperations.FixedTimeEquals(hashedPassword.HashedPassword, recreatedPassword);
         }
 
         private static byte[] GenerateSalt(int saltSize)
         {
+            // Create a byte array as salt
             byte[] salt = new byte[saltSize];
             using (var random = RandomNumberGenerator.Create())
             {
@@ -76,6 +67,7 @@ namespace Plantt.Applcation.Services
 
         private static byte[] HashPassword(string password, byte[] salt, int iterations, int hashSize)
         {
+            // hash the password with Rfc2898 using the SHA512 algorytm.
             using (var deriveBytes = new Rfc2898DeriveBytes(password, salt, iterations, HashAlgorithmName.SHA512))
             {
                 return deriveBytes.GetBytes(hashSize);
